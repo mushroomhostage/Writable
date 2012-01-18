@@ -26,6 +26,62 @@ import org.bukkit.configuration.*;
 import org.bukkit.configuration.file.*;
 import org.bukkit.*;
 
+// Location of a block, integral, comparable and hashable (unlike Bukkit's Location)
+// TODO: merge with other plugins
+class BlockLocation implements Comparable {
+    World world;
+    int x, y, z;
+
+    public BlockLocation(Location loc) {
+        world = loc.getWorld();
+        x = loc.getBlockX();
+        y = loc.getBlockY();
+        z = loc.getBlockZ();
+    }
+
+    public BlockLocation(World w, int x0, int y0, int z0) {
+        world = w;
+        x = x0;
+        y = y0;
+        z = z0;
+    }
+
+    public Location getLocation() {
+        return new Location(world, x + 0.5, y + 0.5, z + 0.5);
+    }
+
+    public String toString() {
+        return x + "," + y + "," + z;
+    }
+
+    public int compareTo(Object obj) {
+        if (!(obj instanceof BlockLocation)) {
+            return -1;
+        }
+        BlockLocation rhs = (BlockLocation)obj;
+
+        // TODO: also compare world
+        if (x - rhs.x != 0) {
+            return x - rhs.x;
+        } else if (y - rhs.y != 0) {
+            return y - rhs.y;
+        } else if (z - rhs.z != 0) {
+            return z - rhs.z;
+        }
+
+        return 0;
+    }
+
+    public boolean equals(Object obj) {
+        return compareTo(obj) == 0;      // why do I have to do this myself?
+    }
+
+    public int hashCode() {
+        // lame hashing TODO: improve?
+        return x * y * z;
+    }
+}
+
 class WritablePlayerListener extends PlayerListener {
     Logger log = Logger.getLogger("Minecraft");
     Plugin plugin;
@@ -35,6 +91,7 @@ class WritablePlayerListener extends PlayerListener {
     }
 
     public void onPlayerInteract(PlayerInteractEvent event) {
+        Block block = event.getClickedBlock();
         ItemStack item = event.getItem();
         Player player = event.getPlayer();
         Action action = event.getAction();
@@ -44,9 +101,13 @@ class WritablePlayerListener extends PlayerListener {
             // TODO: check if have writing implement (ink sac), if so use up
 
             // Quickly change to sign, so double right-click paper = place sign to write on
-            //player.setItemInHand(new ItemStack(Material.SIGN, 1, item.getDurability()));
-            player.setItemInHand(new ItemStack(Material.SIGN, 1, (short)42, new Byte((byte)69)));
+            player.setItemInHand(new ItemStack(Material.SIGN, 1));
+            // TODO: if have >1, save off old paper?
 
+            BlockLocation blockLoc = new BlockLocation(block.getLocation());
+
+            log.info("Writing at "+blockLoc);
+            Writable.writingAt.put(blockLoc, 42);
         }
     }
 }
@@ -63,8 +124,19 @@ class WritableBlockListener extends BlockListener {
         Block block = event.getBlock();
         String[] lines = event.getLines();
 
-        // TODO: find out if this sign came from paper, if so, which one.. this doesn't tell us
-        log.info("sign data = " + block.getData()); 
+        // Find out if this same came from writing on paper
+        BlockLocation blockLoc = new BlockLocation(block.getLocation());
+        Integer paperInteger = Writable.writingAt.get(blockLoc);
+        if (paperInteger == null) {
+            log.info("Just placing a sign, at "+blockLoc+", not in "+Writable.writingAt);
+            return;
+        }
+        // TODO: check nearby
+
+        int paperInt = paperInteger.intValue();
+
+        log.info("Writing on paper #"+paperInt);
+
         // TODO: append lines to paper
     }
 }
@@ -75,7 +147,10 @@ public class Writable extends JavaPlugin {
     WritablePlayerListener playerListener;
     WritableBlockListener blockListener;
 
+    static public ConcurrentHashMap<BlockLocation, Integer> writingAt;
+
     public void onEnable() {
+        writingAt = new ConcurrentHashMap<BlockLocation, Integer>();
 
         playerListener = new WritablePlayerListener(this);
         blockListener = new WritableBlockListener(this);
