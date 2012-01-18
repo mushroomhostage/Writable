@@ -171,9 +171,17 @@ class WritableBlockListener extends BlockListener {
         log.info("Writing on paper #"+paperInt);
 
         // TODO: append lines to paper
+
+        // Destroy sign
+        block.setType(Material.AIR);
+
+        // TODO: revert previous item, with damage value
+        player.setItemInHand(new ItemStack(Material.PAPER, 1));
+
+        // Wrote sign, done
+        Writable.writingState.put(player, WritingState.NOT_WRITING);
+        // TODO: just delete from state?
     }
-
-
 }
 
 
