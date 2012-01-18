@@ -33,62 +33,6 @@ enum WritingState {
     PLACED_SIGN, 
 }
 
-// Location of a block, integral, comparable and hashable (unlike Bukkit's Location)
-// TODO: merge with other plugins
-class BlockLocation implements Comparable {
-    World world;
-    int x, y, z;
-
-    public BlockLocation(Location loc) {
-        world = loc.getWorld();
-        x = loc.getBlockX();
-        y = loc.getBlockY();
-        z = loc.getBlockZ();
-    }
-
-    public BlockLocation(World w, int x0, int y0, int z0) {
-        world = w;
-        x = x0;
-        y = y0;
-        z = z0;
-    }
-
-    public Location getLocation() {
-        return new Location(world, x + 0.5, y + 0.5, z + 0.5);
-    }
-
-    public String toString() {
-        return x + "," + y + "," + z;
-    }
-
-    public int compareTo(Object obj) {
-        if (!(obj instanceof BlockLocation)) {
-            return -1;
-        }
-        BlockLocation rhs = (BlockLocation)obj;
-
-        // TODO: also compare world
-        if (x - rhs.x != 0) {
-            return x - rhs.x;
-        } else if (y - rhs.y != 0) {
-            return y - rhs.y;
-        } else if (z - rhs.z != 0) {
-            return z - rhs.z;
-        }
-
-        return 0;
-    }
-
-    public boolean equals(Object obj) {
-        return compareTo(obj) == 0;      // why do I have to do this myself?
-    }
-
-    public int hashCode() {
-        // lame hashing TODO: improve?
-        return x * y * z;
-    }
-}
-
 class WritableSignPlaceTimeoutTask implements Runnable {
     Logger log = Logger.getLogger("Minecraft");
 
@@ -159,9 +103,6 @@ class WritableBlockListener extends BlockListener {
 
             // Did they get this sign from right-clicking paper?
             if (state == WritingState.CLICKED_PAPER) {
-                // Save where they place the sign
-                BlockLocation blockLoc = new BlockLocation(block.getLocation());
-
                 log.info("Place paper sign"+block);
                 Writable.setWritingState(player, WritingState.PLACED_SIGN);
                 // TODO: store paper ID
@@ -185,7 +126,6 @@ class WritableBlockListener extends BlockListener {
         // This sign text came from a sign from clicking paper
         log.info("Changing paper sign");
 
-        BlockLocation blockLoc = new BlockLocation(block.getLocation());
         // TODO: get paper ID
         log.info("Writing on paper");
 
