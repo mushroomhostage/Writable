@@ -28,14 +28,16 @@ import org.bukkit.scheduler.*;
 import org.bukkit.*;
 
 enum WritingState {
-    NOT_WRITING,
-    CLICKED_PAPER,
-    PLACED_SIGN, 
+    NOT_WRITING,        // initial state, timed out, or finished writing
+    CLICKED_PAPER,      // onPlayerInteract(), when right-click paper
+    PLACED_SIGN,        // onBlockPlace(), when placed temporary sign
+                        // onSignChange(), after wrote sign
 }
 
 class WritableSignPlaceTimeoutTask implements Runnable {
-    Logger log = Logger.getLogger("Minecraft");
+    static public ConcurrentHashMap<Player, Integer> taskIDs = new ConcurrentHashMap<Player, Integer>();
 
+    static Logger log = Logger.getLogger("Minecraft");
     Player player;
 
     public WritableSignPlaceTimeoutTask(Player p) {
@@ -47,10 +49,13 @@ class WritableSignPlaceTimeoutTask implements Runnable {
             log.info("did not place sign in time");
             
             // TODO: revert to previously held paper
+            // TODO: in same slot
             player.setItemInHand(new ItemStack(Material.PAPER, 1));
 
             Writable.setWritingState(player, WritingState.NOT_WRITING);
         }
+
+        WritableSignPlaceTimeoutTask.taskIDs.remove(player);
     }
 }
 
@@ -80,8 +85,10 @@ class WritablePlayerListener extends PlayerListener {
             
             // Timeout to NOT_WRITING if our sign isn't used in a sufficient time
             WritableSignPlaceTimeoutTask task = new WritableSignPlaceTimeoutTask(player);
-            int taskId = Bukkit.getScheduler().scheduleAsyncDelayedTask(plugin, task, plugin.getConfig().getLong("signTimeout", 2*20));
-            // TODO: cancel timeout task if make it to PLACED_SIGN in time! otherwise, if place too many too fast, timeouts overlap
+            int taskID = Bukkit.getScheduler().scheduleAsyncDelayedTask(plugin, task, plugin.getConfig().getLong("signTimeout", 2*20));
+
+            // Save task to cancel if did in fact make it to PLACED_SIGN in time
+            WritableSignPlaceTimeoutTask.taskIDs.put(player, taskID);
         }
     }
 }
@@ -104,6 +111,12 @@ class WritableBlockListener extends BlockListener {
             // Did they get this sign from right-clicking paper?
             if (state == WritingState.CLICKED_PAPER) {
                 log.info("Place paper sign"+block);
+
+                // We made it, stop timeout task (so won't revert to NOT_WRITING and take back sign)
+                int taskID = WritableSignPlaceTimeoutTask.taskIDs.get(player);
+                WritableSignPlaceTimeoutTask.taskIDs.remove(player);
+                Bukkit.getScheduler().cancelTask(taskID);
+
                 Writable.setWritingState(player, WritingState.PLACED_SIGN);
                 // TODO: store paper ID
             } else {
@@ -135,6 +148,7 @@ class WritableBlockListener extends BlockListener {
         block.setType(Material.AIR);
 
         // TODO: revert previous item, with damage value
+        // TODO: in same slot
         player.setItemInHand(new ItemStack(Material.PAPER, 1));
 
         // Wrote sign, done
