@@ -1,6 +1,7 @@
 
 package me.exphc.Writable;
 
+import java.util.Collections;
 import java.lang.Byte;
 import java.util.List;
 import java.util.ArrayList;
@@ -49,7 +50,6 @@ class WritableSignPlaceTimeoutTask implements Runnable {
             log.info("did not place sign in time");
             
             WritablePlayerListener.restoreSavedItem(player);
-
             Writable.setWritingState(player, WritingState.NOT_WRITING);
         }
 
@@ -77,7 +77,7 @@ class WritablePlayerListener extends PlayerListener {
         if (item != null && item.getType() == Material.PAPER && action == Action.RIGHT_CLICK_BLOCK) {
             if (Writable.getWritingState(player) != WritingState.NOT_WRITING) {
                 player.sendMessage("You are already writing");
-                // TODO: cancel?
+                // TODO: stop other writing, restore (like timeout), cancel task? 
                 return;
             }
 
@@ -104,7 +104,8 @@ class WritablePlayerListener extends PlayerListener {
     }
 
     // Restore previous item held by player, before started writing (do not use setItemInHand())
-    static public void restoreSavedItem(Player player) {
+    // Returns items restored
+    static public ItemStack restoreSavedItem(Player player) {
         ItemStack items = savedItemStack.get(player);
         int slot = savedItemSlot.get(player);
 
@@ -112,6 +113,8 @@ class WritablePlayerListener extends PlayerListener {
 
         savedItemStack.remove(player);
         savedItemSlot.remove(player);
+
+        return items;
     }
 }
 
@@ -159,23 +162,18 @@ class WritableBlockListener extends BlockListener {
         }
 
         // This sign text came from a sign from clicking paper
-        log.info("Changing paper sign");
-
-        // TODO: get paper ID
-        log.info("Writing on paper");
-
-        // TODO: append lines to paper
 
         // Destroy sign
         block.setType(Material.AIR);
 
-        
         // Restore previous item 
-        WritablePlayerListener.restoreSavedItem(player);
+        ItemStack paperItem = WritablePlayerListener.restoreSavedItem(player);
 
-        // Wrote sign, done
+        // Write
+        int id = paperItem.getDurability();
+        Writable.writePaper(id, lines);
+
         Writable.setWritingState(player, WritingState.NOT_WRITING);
-        // TODO: just delete from state?
     }
 }
 
@@ -186,9 +184,11 @@ public class Writable extends JavaPlugin {
     WritableBlockListener blockListener;
 
     static private ConcurrentHashMap<Player, WritingState> writingState;
+    static private ConcurrentHashMap<Integer, ArrayList<String>> paperTexts;
 
     public void onEnable() {
         writingState = new ConcurrentHashMap<Player, WritingState>();
+        paperTexts = new ConcurrentHashMap<Integer, ArrayList<String>>();
 
         playerListener = new WritablePlayerListener(this);
         blockListener = new WritableBlockListener(this);
@@ -221,5 +221,31 @@ public class Writable extends JavaPlugin {
         WritingState state = writingState.get(player);
 
         return state == null ? WritingState.NOT_WRITING : state;
+    }
+
+    // Manipulate texts
+    static public void writePaper(int id, List<String> newLines) {
+        List<String> lines = readPaper(id);
+       
+        log.info("writing "+newLines);
+        lines.addAll(newLines);
+    }
+
+    static public void writePaper(int id, String[] linesArray) {
+        // Convert array to list
+        List<String> linesList = new ArrayList<String>(linesArray.length);
+        Collections.addAll(linesList, linesArray);
+
+        writePaper(id, linesList);
+    }
+
+    static public List<String> readPaper(int id) {
+        List<String> lines = paperTexts.get(id);
+
+        if (lines == null) {
+            return new ArrayList<String>();   // empty array
+        } else {
+            return lines;
+        }
     }
 }
