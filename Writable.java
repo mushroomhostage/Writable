@@ -116,6 +116,39 @@ class WritablePlayerListener extends PlayerListener {
 
         return items;
     }
+
+    static public void readPaperToPlayer(Player player, int id) {
+        ArrayList<String> lines = Writable.readPaper(id);
+
+        player.sendMessage(lines + "");
+        // TODO: page through, view
+    }
+
+
+    // When change to in inventory slot, read back
+    public void onItemHeldChange(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItem(event.getNewSlot());
+
+        if (item != null && item.getType() == Material.PAPER) {
+            int id = item.getDurability();
+
+            // TODO: only if not zero
+            readPaperToPlayer(player, id);
+        }
+    }
+
+    // If pickup a paper with writing on it, let know
+    public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+        ItemStack item = event.getItem().getItemStack();
+
+        if (item != null && item.getType() == Material.PAPER) {
+            if (item.getDurability() != 0) {
+                event.getPlayer().sendMessage("You picked up paper, mysteriously scribbled upon");
+            }
+        }
+    }
+
 }
 
 class WritableBlockListener extends BlockListener {
@@ -135,8 +168,6 @@ class WritableBlockListener extends BlockListener {
 
             // Did they get this sign from right-clicking paper?
             if (state == WritingState.CLICKED_PAPER) {
-                log.info("Place paper sign"+block);
-
                 // We made it, stop timeout task (so won't revert to NOT_WRITING and take back sign)
                 int taskID = WritableSignPlaceTimeoutTask.taskIDs.get(player);
                 WritableSignPlaceTimeoutTask.taskIDs.remove(player);
@@ -173,7 +204,9 @@ class WritableBlockListener extends BlockListener {
         int id = paperItem.getDurability();
         Writable.writePaper(id, lines);
 
+        // Finish up
         Writable.setWritingState(player, WritingState.NOT_WRITING);
+        WritablePlayerListener.readPaperToPlayer(player, id);
     }
 }
 
@@ -184,23 +217,30 @@ public class Writable extends JavaPlugin {
     WritableBlockListener blockListener;
 
     static private ConcurrentHashMap<Player, WritingState> writingState;
-    static private ConcurrentHashMap<Integer, ArrayList<String>> paperTexts;
+    static private ConcurrentHashMap<Integer, ArrayList<String>> paperTexts;    // TODO: paper class?
 
     public void onEnable() {
         writingState = new ConcurrentHashMap<Player, WritingState>();
+
+        // TODO: load from disk
         paperTexts = new ConcurrentHashMap<Integer, ArrayList<String>>();
 
         playerListener = new WritablePlayerListener(this);
         blockListener = new WritableBlockListener(this);
 
-        Bukkit.getPluginManager().registerEvent(org.bukkit.event.Event.Type.PLAYER_INTERACT, playerListener, org.bukkit.event.Event.Priority.Normal, this);
-        Bukkit.getPluginManager().registerEvent(org.bukkit.event.Event.Type.SIGN_CHANGE, blockListener, org.bukkit.event.Event.Priority.Normal, this);
-        Bukkit.getPluginManager().registerEvent(org.bukkit.event.Event.Type.BLOCK_PLACE, blockListener, org.bukkit.event.Event.Priority.Normal, this);
+        Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_INTERACT, playerListener, org.bukkit.event.Event.Priority.Normal, this);
+        Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_ITEM_HELD, playerListener, org.bukkit.event.Event.Priority.Normal, this);
+        Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_PICKUP_ITEM, playerListener, org.bukkit.event.Event.Priority.Normal, this);
+
+        Bukkit.getPluginManager().registerEvent(Event.Type.SIGN_CHANGE, blockListener, org.bukkit.event.Event.Priority.Normal, this);
+        Bukkit.getPluginManager().registerEvent(Event.Type.BLOCK_PLACE, blockListener, org.bukkit.event.Event.Priority.Normal, this);
 
         log.info("Writable enabled");
     }
 
     public void onDisable() {
+        // TODO: save paperTexts to disk
+
         log.info("Writable disabled");
     }
 
@@ -223,24 +263,33 @@ public class Writable extends JavaPlugin {
         return state == null ? WritingState.NOT_WRITING : state;
     }
 
-    // Manipulate texts
-    static public void writePaper(int id, List<String> newLines) {
-        List<String> lines = readPaper(id);
-       
-        log.info("writing "+newLines);
-        lines.addAll(newLines);
+    // Manipulate paper text
+    static public void writePaper(int id, String[] newLines) {
+        ArrayList<String> lines = readPaper(id);
+
+        // Add non-empty lines
+        for (int i = 0; i < newLines.length; i += 1) {
+            String line = newLines[i];
+
+            if (line == null || line.equals("")) {
+                // TODO: don't skip unless is last lines!
+                // sometimes want to retain spacing, add whitespace..
+                // foo\n\n\n -> foo
+                // foo\nbar -> foo\nbar
+                // \n\nfoo -> \n\nfoo
+                continue;
+            }
+
+            lines.add(line);
+        }
+
+        paperTexts.put(new Integer(id), lines);
+
+        // TODO: save to disk now?
     }
 
-    static public void writePaper(int id, String[] linesArray) {
-        // Convert array to list
-        List<String> linesList = new ArrayList<String>(linesArray.length);
-        Collections.addAll(linesList, linesArray);
-
-        writePaper(id, linesList);
-    }
-
-    static public List<String> readPaper(int id) {
-        List<String> lines = paperTexts.get(id);
+    static public ArrayList<String> readPaper(int id) {
+        ArrayList<String> lines = paperTexts.get(id);
 
         if (lines == null) {
             return new ArrayList<String>();   // empty array
