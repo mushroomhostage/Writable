@@ -2,7 +2,6 @@
 package me.exphc.Writable;
 
 import java.util.Collections;
-import java.lang.Byte;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -12,6 +11,9 @@ import java.util.Iterator;
 import java.util.logging.Logger;
 import java.util.concurrent.ConcurrentHashMap;
 import java.io.*;
+import java.lang.Byte;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.*;
@@ -81,8 +83,12 @@ class WritablePlayerListener extends PlayerListener {
                 return;
             }
 
+            // TODO: prevent writing on >1 stacks? or try to shuffle around?
+
             // TODO: check block to ensure is realistically hard surface to write on (stone, not gravel or sand, etc.)
+
             // TODO: check if have writing implement (ink sac), if so use up
+
 
             // Save off old item in hand to restore
             savedItemStack.put(player, item);
@@ -144,8 +150,8 @@ class WritablePlayerListener extends PlayerListener {
 
         if (item != null && item.getType() == Material.PAPER) {
             if (item.getDurability() != 0) {
-                event.getPlayer().sendMessage("You picked up paper, mysteriously scribbled upon");
-            }
+                event.getPlayer().sendMessage("You picked up paper, mysteriously scribbled");
+            } 
         }
     }
 
@@ -235,7 +241,41 @@ public class Writable extends JavaPlugin {
         Bukkit.getPluginManager().registerEvent(Event.Type.SIGN_CHANGE, blockListener, org.bukkit.event.Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.BLOCK_PLACE, blockListener, org.bukkit.event.Event.Priority.Normal, this);
 
+        configurePaperStacking();
+
         log.info("Writable enabled");
+    }
+
+    // Try to make paper stack by damage ID, or otherwise stack by one
+    // Based on http://code.google.com/p/nisovin-minecraft-bukkit-plugins/source/browse/trunk/BookWorm/src/com/nisovin/bookworm/BookWorm.java
+    // http://dev.bukkit.org/server-mods/bookworm/
+    private void configurePaperStacking() {
+        try {
+        boolean ok = false;
+            // attempt to make papers with different data values stack separately
+            try {
+                // obfuscated method name, check BookWorm for updates
+                String methodName = getConfig().getString("stack-by-data-fn", "a");//"bQ");
+                Method method = net.minecraft.server.Item.class.getDeclaredMethod(methodName, boolean.class);
+                if (method.getReturnType() == net.minecraft.server.Item.class) {
+                    method.setAccessible(true);
+                    method.invoke(net.minecraft.server.Item.PAPER, true);
+                    ok = true;
+                }
+            } catch (Exception e) {
+                log.info("Not stacking papers together");
+            }
+            if (!ok) {
+                // otherwise limit stack size to 1
+                Field field = net.minecraft.server.Item.class.getDeclaredField("maxStackSize");
+                field.setAccessible(true);
+                field.setInt(net.minecraft.server.Item.PAPER, 1);
+            } else {
+                log.info("Successfully changed paper stacking");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void onDisable() {
