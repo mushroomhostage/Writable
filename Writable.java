@@ -26,6 +26,12 @@ import org.bukkit.configuration.*;
 import org.bukkit.configuration.file.*;
 import org.bukkit.*;
 
+enum WritingState {
+    NOT_WRITING,
+    CLICKED_PAPER,
+    PLACED_SIGN, 
+}
+
 // Location of a block, integral, comparable and hashable (unlike Bukkit's Location)
 // TODO: merge with other plugins
 class BlockLocation implements Comparable {
@@ -104,14 +110,9 @@ class WritablePlayerListener extends PlayerListener {
             player.setItemInHand(new ItemStack(Material.SIGN, 1));
             // TODO: if have >1, save off old paper?
 
-            // XXX: This is wrong, we need to save where the sign is placed, not where they clicked the paper
-            // But, we do need to link the two together
-            /*
-            BlockLocation blockLoc = new BlockLocation(block.getLocation());
-            log.info("Writing at "+blockLoc);
-            Writable.writingAt.put(blockLoc, 42);
-            log.info("BLOCK1="+block);
-            */
+            Writable.writingState.put(player, WritingState.CLICKED_PAPER);
+            log.info("Player "+player+"state: "+WritingState.CLICKED_PAPER);
+            // TODO: timeout to NOT_WRITING after some time if not used
         }
     }
 }
@@ -124,20 +125,47 @@ class WritableBlockListener extends BlockListener {
         plugin = pl;
     }
 
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Block block = event.getBlock();
+        Player player = event.getPlayer();
+
+        if (block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST) {
+            WritingState state = Writable.writingState.get(player);
+
+            // Did they get this sign from right-clicking paper?
+            if (state == WritingState.CLICKED_PAPER) {
+                // Save where they place the sign
+                BlockLocation blockLoc = new BlockLocation(block.getLocation());
+
+                log.info("Place paper sign"+block);
+                Writable.writingAt.put(blockLoc, new Integer(42));  // TODO: ID
+                Writable.writingState.put(player, WritingState.PLACED_SIGN);
+            } else {
+                log.info("Place non-paper sign");
+            }
+        }
+    }
+
     public void onSignChange(SignChangeEvent event) {
         Block block = event.getBlock();
+        Player player = event.getPlayer();
         String[] lines = event.getLines();
 
-        log.info("BLOCK2="+block);
+        WritingState state = Writable.writingState.get(player);
+        if (state != WritingState.PLACED_SIGN) {    
+            log.info("Changing sign not from paper");
+            return;
+        }
 
-        // Find out if this same came from writing on paper
+        // This sign text came from a sign from clicking paper
+        log.info("Changing paper sign");
+
         BlockLocation blockLoc = new BlockLocation(block.getLocation());
         Integer paperInteger = Writable.writingAt.get(blockLoc);
         if (paperInteger == null) {
-            log.info("Just placing a sign, at "+blockLoc+", not in "+Writable.writingAt);
+            log.info("couldn't find paper ID??");
             return;
         }
-        // TODO: check nearby
 
         int paperInt = paperInteger.intValue();
         log.info("Writing on paper #"+paperInt);
@@ -145,18 +173,7 @@ class WritableBlockListener extends BlockListener {
         // TODO: append lines to paper
     }
 
-    public void onBlockPlace(BlockPlaceEvent event) {
-        Block block = event.getBlock();
-        Player player = event.getPlayer();
 
-        if (block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST) {
-            BlockLocation blockLoc = new BlockLocation(block.getLocation());
-
-            // TODO: determine if came from paper
-            log.info("BLOCK place"+block);
-            Writable.writingAt.put(blockLoc, new Integer(42));
-        }
-    }
 }
 
 
@@ -166,9 +183,11 @@ public class Writable extends JavaPlugin {
     WritableBlockListener blockListener;
 
     static public ConcurrentHashMap<BlockLocation, Integer> writingAt;
+    static public ConcurrentHashMap<Player, WritingState> writingState;
 
     public void onEnable() {
         writingAt = new ConcurrentHashMap<BlockLocation, Integer>();
+        writingState = new ConcurrentHashMap<Player, WritingState>();
 
         playerListener = new WritablePlayerListener(this);
         blockListener = new WritableBlockListener(this);
