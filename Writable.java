@@ -104,10 +104,14 @@ class WritablePlayerListener extends PlayerListener {
             player.setItemInHand(new ItemStack(Material.SIGN, 1));
             // TODO: if have >1, save off old paper?
 
+            // XXX: This is wrong, we need to save where the sign is placed, not where they clicked the paper
+            // But, we do need to link the two together
+            /*
             BlockLocation blockLoc = new BlockLocation(block.getLocation());
-
             log.info("Writing at "+blockLoc);
             Writable.writingAt.put(blockLoc, 42);
+            log.info("BLOCK1="+block);
+            */
         }
     }
 }
@@ -124,6 +128,8 @@ class WritableBlockListener extends BlockListener {
         Block block = event.getBlock();
         String[] lines = event.getLines();
 
+        log.info("BLOCK2="+block);
+
         // Find out if this same came from writing on paper
         BlockLocation blockLoc = new BlockLocation(block.getLocation());
         Integer paperInteger = Writable.writingAt.get(blockLoc);
@@ -134,10 +140,22 @@ class WritableBlockListener extends BlockListener {
         // TODO: check nearby
 
         int paperInt = paperInteger.intValue();
-
         log.info("Writing on paper #"+paperInt);
 
         // TODO: append lines to paper
+    }
+
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Block block = event.getBlock();
+        Player player = event.getPlayer();
+
+        if (block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST) {
+            BlockLocation blockLoc = new BlockLocation(block.getLocation());
+
+            // TODO: determine if came from paper
+            log.info("BLOCK place"+block);
+            Writable.writingAt.put(blockLoc, new Integer(42));
+        }
     }
 }
 
@@ -157,6 +175,7 @@ public class Writable extends JavaPlugin {
 
         Bukkit.getPluginManager().registerEvent(org.bukkit.event.Event.Type.PLAYER_INTERACT, playerListener, org.bukkit.event.Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(org.bukkit.event.Event.Type.SIGN_CHANGE, blockListener, org.bukkit.event.Event.Priority.Normal, this);
+        Bukkit.getPluginManager().registerEvent(org.bukkit.event.Event.Type.BLOCK_PLACE, blockListener, org.bukkit.event.Event.Priority.Normal, this);
 
         log.info("Writable enabled");
     }
