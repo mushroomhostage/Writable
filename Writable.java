@@ -89,6 +89,14 @@ class WritablePlayerListener extends PlayerListener {
 
             // TODO: check if have writing implement (ink sac), if so use up
 
+            // If blank, assign new ID
+            short id = item.getDurability();
+            if (id == 0) {
+                id = Writable.nextPaperID(); // TODO: choose next!
+                item.setDurability(id);
+            }
+            log.info("This is book #"+id);
+
 
             // Save off old item in hand to restore
             savedItemStack.put(player, item);
@@ -336,5 +344,10 @@ public class Writable extends JavaPlugin {
         } else {
             return lines;
         }
+    }
+
+    static short nextPaperID() {
+        // TODO: get next!
+        return 1;
     }
 }
