@@ -75,6 +75,12 @@ class WritablePlayerListener extends PlayerListener {
         Action action = event.getAction();
 
         if (item != null && item.getType() == Material.PAPER && action == Action.RIGHT_CLICK_BLOCK) {
+            if (Writable.getWritingState(player) != WritingState.NOT_WRITING) {
+                player.sendMessage("You are already writing");
+                // TODO: cancel?
+                return;
+            }
+
             // TODO: check block to ensure is realistically hard surface to write on (stone, not gravel or sand, etc.)
             // TODO: check if have writing implement (ink sac), if so use up
 
