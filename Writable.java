@@ -99,13 +99,13 @@ class WritableSignPlaceTimeoutTask implements Runnable {
     }
 
     public void run() {
-        if (Writable.writingState.get(player) != WritingState.PLACED_SIGN) {
+        if (Writable.getWritingState(player) != WritingState.PLACED_SIGN) {
             log.info("did not place sign in time");
             
             // TODO: revert to previously held paper
             player.setItemInHand(new ItemStack(Material.PAPER, 1));
 
-            Writable.writingState.put(player, WritingState.NOT_WRITING);
+            Writable.setWritingState(player, WritingState.NOT_WRITING);
         }
     }
 }
@@ -132,12 +132,10 @@ class WritablePlayerListener extends PlayerListener {
             player.setItemInHand(new ItemStack(Material.SIGN, 1));
             // TODO: if have >1, save off old paper?
 
-            Writable.writingState.put(player, WritingState.CLICKED_PAPER);
-            log.info("Player "+player+"state: "+WritingState.CLICKED_PAPER);
-            // TODO: timeout to NOT_WRITING after some time if not used
-
-            WritableSignPlaceTimeoutTask task = new WritableSignPlaceTimeoutTask(player);
+            Writable.setWritingState(player, WritingState.CLICKED_PAPER);
             
+            // Timeout to NOT_WRITING if our sign isn't used in a sufficient time
+            WritableSignPlaceTimeoutTask task = new WritableSignPlaceTimeoutTask(player);
             Bukkit.getScheduler().scheduleAsyncDelayedTask(plugin, task, plugin.getConfig().getLong("signTimeout", 2*20));
         }
     }
@@ -156,7 +154,7 @@ class WritableBlockListener extends BlockListener {
         Player player = event.getPlayer();
 
         if (block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST) {
-            WritingState state = Writable.writingState.get(player);
+            WritingState state = Writable.getWritingState(player);
 
             // Did they get this sign from right-clicking paper?
             if (state == WritingState.CLICKED_PAPER) {
@@ -165,7 +163,7 @@ class WritableBlockListener extends BlockListener {
 
                 log.info("Place paper sign"+block);
                 Writable.writingAt.put(blockLoc, new Integer(42));  // TODO: ID
-                Writable.writingState.put(player, WritingState.PLACED_SIGN);
+                Writable.setWritingState(player, WritingState.PLACED_SIGN);
             } else {
                 log.info("Place non-paper sign");
             }
@@ -177,7 +175,7 @@ class WritableBlockListener extends BlockListener {
         Player player = event.getPlayer();
         String[] lines = event.getLines();
 
-        WritingState state = Writable.writingState.get(player);
+        WritingState state = Writable.getWritingState(player);
         if (state != WritingState.PLACED_SIGN) {    
             log.info("Changing sign not from paper");
             return;
@@ -205,19 +203,19 @@ class WritableBlockListener extends BlockListener {
         player.setItemInHand(new ItemStack(Material.PAPER, 1));
 
         // Wrote sign, done
-        Writable.writingState.put(player, WritingState.NOT_WRITING);
+        Writable.setWritingState(player, WritingState.NOT_WRITING);
         // TODO: just delete from state?
     }
 }
 
 
 public class Writable extends JavaPlugin {
-    Logger log = Logger.getLogger("Minecraft");
+    static Logger log = Logger.getLogger("Minecraft");
     WritablePlayerListener playerListener;
     WritableBlockListener blockListener;
 
     static public ConcurrentHashMap<BlockLocation, Integer> writingAt;
-    static public ConcurrentHashMap<Player, WritingState> writingState;
+    static private ConcurrentHashMap<Player, WritingState> writingState;
 
     public void onEnable() {
         writingAt = new ConcurrentHashMap<BlockLocation, Integer>();
@@ -235,5 +233,25 @@ public class Writable extends JavaPlugin {
 
     public void onDisable() {
         log.info("Writable disabled");
+    }
+
+    // Manipulate state machine
+
+    static public void setWritingState(Player player, WritingState newState) {
+        WritingState oldState = getWritingState(player);
+
+        log.info("State change "+player.getName()+": "+oldState+" -> "+newState);
+
+        if (newState == WritingState.NOT_WRITING) {
+            writingState.remove(player);
+        } else {
+            writingState.put(player, newState);
+        }
+    }
+
+    static public WritingState getWritingState(Player player) {
+        WritingState state = writingState.get(player);
+
+        return state == null ? WritingState.NOT_WRITING : state;
     }
 }
