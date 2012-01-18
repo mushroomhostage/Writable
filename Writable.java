@@ -24,6 +24,7 @@ import org.bukkit.command.*;
 import org.bukkit.inventory.*;
 import org.bukkit.configuration.*;
 import org.bukkit.configuration.file.*;
+import org.bukkit.scheduler.*;
 import org.bukkit.*;
 
 enum WritingState {
@@ -88,6 +89,27 @@ class BlockLocation implements Comparable {
     }
 }
 
+class WritableSignPlaceTimeoutTask implements Runnable {
+    Logger log = Logger.getLogger("Minecraft");
+
+    Player player;
+
+    public WritableSignPlaceTimeoutTask(Player p) {
+        player = p;
+    }
+
+    public void run() {
+        if (Writable.writingState.get(player) != WritingState.PLACED_SIGN) {
+            log.info("did not place sign in time");
+            
+            // TODO: revert to previously held paper
+            player.setItemInHand(new ItemStack(Material.PAPER, 1));
+
+            Writable.writingState.put(player, WritingState.NOT_WRITING);
+        }
+    }
+}
+
 class WritablePlayerListener extends PlayerListener {
     Logger log = Logger.getLogger("Minecraft");
     Plugin plugin;
@@ -113,6 +135,10 @@ class WritablePlayerListener extends PlayerListener {
             Writable.writingState.put(player, WritingState.CLICKED_PAPER);
             log.info("Player "+player+"state: "+WritingState.CLICKED_PAPER);
             // TODO: timeout to NOT_WRITING after some time if not used
+
+            WritableSignPlaceTimeoutTask task = new WritableSignPlaceTimeoutTask(player);
+            
+            Bukkit.getScheduler().scheduleAsyncDelayedTask(plugin, task, plugin.getConfig().getLong("signTimeout", 2*20));
         }
     }
 }
