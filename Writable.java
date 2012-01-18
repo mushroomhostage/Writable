@@ -136,7 +136,8 @@ class WritablePlayerListener extends PlayerListener {
             
             // Timeout to NOT_WRITING if our sign isn't used in a sufficient time
             WritableSignPlaceTimeoutTask task = new WritableSignPlaceTimeoutTask(player);
-            Bukkit.getScheduler().scheduleAsyncDelayedTask(plugin, task, plugin.getConfig().getLong("signTimeout", 2*20));
+            int taskId = Bukkit.getScheduler().scheduleAsyncDelayedTask(plugin, task, plugin.getConfig().getLong("signTimeout", 2*20));
+            // TODO: cancel timeout task if make it to PLACED_SIGN in time! otherwise, if place too many too fast, timeouts overlap
         }
     }
 }
@@ -162,8 +163,8 @@ class WritableBlockListener extends BlockListener {
                 BlockLocation blockLoc = new BlockLocation(block.getLocation());
 
                 log.info("Place paper sign"+block);
-                Writable.writingAt.put(blockLoc, new Integer(42));  // TODO: ID
                 Writable.setWritingState(player, WritingState.PLACED_SIGN);
+                // TODO: store paper ID
             } else {
                 log.info("Place non-paper sign");
             }
@@ -185,14 +186,8 @@ class WritableBlockListener extends BlockListener {
         log.info("Changing paper sign");
 
         BlockLocation blockLoc = new BlockLocation(block.getLocation());
-        Integer paperInteger = Writable.writingAt.get(blockLoc);
-        if (paperInteger == null) {
-            log.info("couldn't find paper ID??");
-            return;
-        }
-
-        int paperInt = paperInteger.intValue();
-        log.info("Writing on paper #"+paperInt);
+        // TODO: get paper ID
+        log.info("Writing on paper");
 
         // TODO: append lines to paper
 
@@ -214,11 +209,9 @@ public class Writable extends JavaPlugin {
     WritablePlayerListener playerListener;
     WritableBlockListener blockListener;
 
-    static public ConcurrentHashMap<BlockLocation, Integer> writingAt;
     static private ConcurrentHashMap<Player, WritingState> writingState;
 
     public void onEnable() {
-        writingAt = new ConcurrentHashMap<BlockLocation, Integer>();
         writingState = new ConcurrentHashMap<Player, WritingState>();
 
         playerListener = new WritablePlayerListener(this);
