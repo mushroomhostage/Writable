@@ -48,9 +48,7 @@ class WritableSignPlaceTimeoutTask implements Runnable {
         if (Writable.getWritingState(player) != WritingState.PLACED_SIGN) {
             log.info("did not place sign in time");
             
-            // TODO: revert to previously held paper
-            // TODO: in same slot
-            player.setItemInHand(new ItemStack(Material.PAPER, 1));
+            WritablePlayerListener.restoreSavedItem(player);
 
             Writable.setWritingState(player, WritingState.NOT_WRITING);
         }
@@ -62,6 +60,9 @@ class WritableSignPlaceTimeoutTask implements Runnable {
 class WritablePlayerListener extends PlayerListener {
     Logger log = Logger.getLogger("Minecraft");
     Plugin plugin;
+
+    static private ConcurrentHashMap<Player, ItemStack> savedItemStack = new ConcurrentHashMap<Player, ItemStack>();
+    static private ConcurrentHashMap<Player, Integer> savedItemSlot = new ConcurrentHashMap<Player, Integer>();
 
     public WritablePlayerListener(Plugin pl) {
         plugin = pl;
@@ -77,6 +78,10 @@ class WritablePlayerListener extends PlayerListener {
             // TODO: check block to ensure is realistically hard surface to write on (stone, not gravel or sand, etc.)
             // TODO: check if have writing implement (ink sac), if so use up
 
+            // Save off old item in hand to restore
+            savedItemStack.put(player, item);
+            savedItemSlot.put(player, player.getInventory().getHeldItemSlot());
+
             // Quickly change to sign, so double right-click paper = place sign to write on
             player.setItemInHand(new ItemStack(Material.SIGN, 1));
             // TODO: if have >1, save off old paper?
@@ -90,6 +95,17 @@ class WritablePlayerListener extends PlayerListener {
             // Save task to cancel if did in fact make it to PLACED_SIGN in time
             WritableSignPlaceTimeoutTask.taskIDs.put(player, taskID);
         }
+    }
+
+    // Restore previous item held by player, before started writing (do not use setItemInHand())
+    static public void restoreSavedItem(Player player) {
+        ItemStack items = savedItemStack.get(player);
+        int slot = savedItemSlot.get(player);
+
+        player.getInventory().setItem(slot, items);
+
+        savedItemStack.remove(player);
+        savedItemSlot.remove(player);
     }
 }
 
@@ -147,9 +163,9 @@ class WritableBlockListener extends BlockListener {
         // Destroy sign
         block.setType(Material.AIR);
 
-        // TODO: revert previous item, with damage value
-        // TODO: in same slot
-        player.setItemInHand(new ItemStack(Material.PAPER, 1));
+        
+        // Restore previous item 
+        WritablePlayerListener.restoreSavedItem(player);
 
         // Wrote sign, done
         Writable.setWritingState(player, WritingState.NOT_WRITING);
@@ -183,7 +199,6 @@ public class Writable extends JavaPlugin {
     }
 
     // Manipulate state machine
-
     static public void setWritingState(Player player, WritingState newState) {
         WritingState oldState = getWritingState(player);
 
