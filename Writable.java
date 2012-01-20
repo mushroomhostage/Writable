@@ -295,8 +295,19 @@ public class Writable extends JavaPlugin {
         log.info("writingImplementMaterials="+writingImplementMaterials);
         log.info("writingSurfaceMaterials="+writingSurfaceMaterials);
 
-        //TODOList<Map<String,Object>> inksStrings = getConfig().getMapList("inks");
+        /*
+        log.info("inks="+ getConfig().getValues(true));
+        //Map<String,Object> inksStrings = getConfig().get("inks").map;
+        //Map<String,Object> inksStrings = getConfig().getConfigurationSection("inks").getValues(true);
+        Iterator it = inksStrings.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            String inkString = (String)pair.getKey();
+            String colorString = (String)pair.getValue();
 
+            log.info("ink "+inkString+" = "+colorString);
+        }
+        */
     }
 
 
