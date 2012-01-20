@@ -7,26 +7,31 @@ writingSurfaces:
     - bedrock
     - clay
     - cobblestone
-    - moss_stone
+    - mossy_cobblestone
     - ice
     - sandstone
     - obsidian
     - stone
-    - stonebricks
     - bookshelf
-    - bricks
+    - brick
     - glass
-    - slabs
-    - planks
+    - step
     - glowstone
-    - netherbrick
+    - nether_brick
+    - log
     - wood
-    - craftingtable
-    - chest
-    - door
+    - wood_stairs
+    - cobblestone_stairs
+    - brick_stairs
+    - smooth_stairs
+    - nether_brick_stairs
+    #- craftingtable
+    #- chest
+    #- door
     - sign
-    - glass_pane
-    - pressure_plate
+    - thin_glass
+    - wood_plate
+    - stone_plate
     - coal_ore
     - gold_ore
     - lapis_ore
@@ -35,7 +40,7 @@ writingSurfaces:
     - gold_block
     - lapis_block
     - iron_block
-    - lily_pad
+    - water_lily
 inks:
     rose_red: dark_red
     dandelion_yellow: yellow
