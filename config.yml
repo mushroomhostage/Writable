@@ -1,0 +1,59 @@
+writingImplements:
+    - feather
+    - stick
+    - blaze_rod
+    - arrow
+writingSurfaces:
+    - bedrock
+    - clay
+    - cobblestone
+    - moss_stone
+    - ice
+    - sandstone
+    - obsidian
+    - stone
+    - stonebricks
+    - bookshelf
+    - bricks
+    - glass
+    - slabs
+    - planks
+    - glowstone
+    - netherbrick
+    - wood
+    - craftingtable
+    - chest
+    - door
+    - sign
+    - glass_pane
+    - pressure_plate
+    - coal_ore
+    - gold_ore
+    - lapis_ore
+    - redstone_ore
+    - iron_ore
+    - gold_block
+    - lapis_block
+    - iron_block
+    - lily_pad
+inks:
+    - rose_red: dark_red
+    - dandelion_yellow: yellow
+    - lapis_lazuli: blue
+    - cactus_green: dark_green
+    - ink_sac: black
+    - bone_meal: white
+    - glowstone_dust: gold
+    #- cocoa_beans: # no brown
+    # - orange_dye:
+    - cyan_dye: blue
+    - purple_dye: light_purple
+    - gray_dye: dark_gray
+    - light_blue_dye: aqua
+    - coal: dark_gray
+    - pink_dye: red
+    - lime_dye: green
+    - magenta_dye: dark_purple
+    - light_gray_dye: gray
+    - redstone_dust: magic
+
