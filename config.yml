@@ -37,23 +37,23 @@ writingSurfaces:
     - iron_block
     - lily_pad
 inks:
-    - rose_red: dark_red
-    - dandelion_yellow: yellow
-    - lapis_lazuli: blue
-    - cactus_green: dark_green
-    - ink_sac: black
-    - bone_meal: white
-    - glowstone_dust: gold
-    #- cocoa_beans: # no brown
-    # - orange_dye:
-    - cyan_dye: blue
-    - purple_dye: light_purple
-    - gray_dye: dark_gray
-    - light_blue_dye: aqua
-    - coal: dark_gray
-    - pink_dye: red
-    - lime_dye: green
-    - magenta_dye: dark_purple
-    - light_gray_dye: gray
-    - redstone_dust: magic
+    rose_red: dark_red
+    dandelion_yellow: yellow
+    lapis_lazuli: blue
+    cactus_green: dark_green
+    ink_sac: black
+    bone_meal: white
+    glowstone_dust: gold
+    #cocoa_beans: # no brown
+    #orange_dye: # no orange
+    cyan_dye: blue
+    purple_dye: light_purple
+    gray_dye: dark_gray
+    light_blue_dye: aqua
+    coal: dark_gray
+    pink_dye: red
+    lime_dye: green
+    magenta_dye: dark_purple
+    light_gray_dye: gray
+    redstone_dust: magic
 

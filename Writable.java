@@ -236,6 +236,8 @@ public class Writable extends JavaPlugin {
     public void onEnable() {
         writingState = new ConcurrentHashMap<Player, WritingState>();
 
+        loadConfig();
+
         // TODO: load from disk
         paperTexts = new ConcurrentHashMap<Integer, ArrayList<String>>();
 
@@ -253,6 +255,50 @@ public class Writable extends JavaPlugin {
 
         log.info("Writable enabled");
     }
+
+    static List<Material> writingImplementMaterials;
+    static List<Material> writingSurfaceMaterials;
+
+    private void loadConfig() {
+        List<String> implementsStrings = getConfig().getStringList("writingImplements");
+
+        writingImplementMaterials = new ArrayList<Material>(); 
+
+        for (String implementString: implementsStrings) {
+            Material implementMaterial = Material.matchMaterial(implementString);
+
+            if (implementMaterial == null) {
+                log.info("Invalid implement material: " + implementString);
+                // TODO: error
+                continue;
+            }
+
+            writingImplementMaterials.add(implementMaterial);
+        }
+
+        List<String> surfacesStrings = getConfig().getStringList("writingSurfaces");
+
+        writingSurfaceMaterials = new ArrayList<Material>();
+
+        for (String surfaceString: surfacesStrings) {
+            Material surfaceMaterial = Material.matchMaterial(surfaceString);
+
+            if (surfaceMaterial == null) {
+                log.info("Invalid surface material: " + surfaceString);
+                // TODO: error;
+                continue;
+            }
+
+            writingSurfaceMaterials.add(surfaceMaterial);
+        }
+
+        log.info("writingImplementMaterials="+writingImplementMaterials);
+        log.info("writingSurfaceMaterials="+writingSurfaceMaterials);
+
+        //TODOList<Map<String,Object>> inksStrings = getConfig().getMapList("inks");
+
+    }
+
 
     // Try to make paper stack by damage ID, or otherwise stack by one
     // Based on http://code.google.com/p/nisovin-minecraft-bukkit-plugins/source/browse/trunk/BookWorm/src/com/nisovin/bookworm/BookWorm.java
