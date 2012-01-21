@@ -289,7 +289,7 @@ public class Writable extends JavaPlugin {
 
     static private List<Material> writingImplementMaterials;
     static private List<Material> writingSurfaceMaterials;
-    static private HashMap<ItemStack,ChatColor> inkColors;
+    static private HashMap<MaterialWithData,ChatColor> inkColors;
 
 
     public void onEnable() {
@@ -352,7 +352,7 @@ public class Writable extends JavaPlugin {
         MemorySection inksSection = (MemorySection)getConfig().get("inks");
         Map<String,Object> inksMap = inksSection.getValues(true);
         
-        inkColors = new HashMap<ItemStack,ChatColor>();
+        inkColors = new HashMap<MaterialWithData,ChatColor>();
 
         Iterator it = inksMap.entrySet().iterator();
         while (it.hasNext()) {
@@ -360,7 +360,7 @@ public class Writable extends JavaPlugin {
             String inkString = (String)pair.getKey();
             String colorString = (String)pair.getValue();
 
-            ItemStack ink = lookupInk(inkString);
+            MaterialWithData ink = lookupInk(inkString);
             if (ink == null) { 
                 log.info("Invalid ink item: " + inkString);
                 // TODO: error
@@ -379,11 +379,10 @@ public class Writable extends JavaPlugin {
         }
     }
 
-    private ItemStack lookupInk(String s) {
+    private MaterialWithData lookupInk(String s) {
         Material material = Material.matchMaterial(s);
         if (material != null) {
-            //return new MaterialWithData(material);
-            return new ItemStack(material, 1);
+            return new MaterialWithData(material);
         }
         DyeColor dyeColor = getDyeColor(s);
         if (dyeColor == null) {
@@ -395,8 +394,7 @@ public class Writable extends JavaPlugin {
             ItemStack item = data.toItemStack();
 
             log.info("DURA"+item.getDurability());
-            //return new MaterialWithData(item.getType(), item.getData());
-            return item.clone();
+            return new MaterialWithData(item.getType(), item.getData());
         }
         return null;
     }
@@ -476,9 +474,9 @@ public class Writable extends JavaPlugin {
         return writingImplementMaterials.contains(item.getType());
     }
 
+    // Get chat color used for given writing ink
     private static ChatColor getChatColor(ItemStack item) {
-        // TODO: fix ink_sack lookup
-        ChatColor color = inkColors.get(item);
+        ChatColor color = inkColors.get(new MaterialWithData(item.getType(), item.getData()));
 
         log.info("inkColors="+inkColors);
        
