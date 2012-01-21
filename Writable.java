@@ -389,12 +389,11 @@ public class Writable extends JavaPlugin {
             dyeColor = getDyeColor(s.replace("_dye", ""));
         }
         if (dyeColor != null) {
-            ItemStack item = new ItemStack(Material.INK_SACK, 1);
             Dye data = new Dye();
             data.setColor(dyeColor);
+            ItemStack item = data.toItemStack();
 
-            item.setData((MaterialData)data);
-
+            log.info("DURA"+item.getDurability());
             return new MaterialWithData(item.getType(), item.getData());
         }
         return null;
