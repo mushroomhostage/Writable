@@ -440,7 +440,15 @@ public class Writable extends JavaPlugin {
                 continue;
             }
 
-            ChatColor inkColor = ChatColor.valueOf(colorString.toUpperCase());
+            ChatColor inkColor;
+            try {
+                inkColor = ChatColor.valueOf(colorString.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Note, 1.0.1 doesn't have MAGIC
+                log.info("Invalid ink color: " + colorString);
+                // TODO: error
+                continue;
+            }
             if (inkColor == null) {
                 log.info("Invalid ink color: " + colorString);
                 // TODO: error
