@@ -289,7 +289,7 @@ public class Writable extends JavaPlugin {
 
     static private List<Material> writingImplementMaterials;
     static private List<Material> writingSurfaceMaterials;
-    static private HashMap<MaterialWithData,ChatColor> inkColors;
+    static private HashMap<ItemStack,ChatColor> inkColors;
 
 
     public void onEnable() {
@@ -352,7 +352,7 @@ public class Writable extends JavaPlugin {
         MemorySection inksSection = (MemorySection)getConfig().get("inks");
         Map<String,Object> inksMap = inksSection.getValues(true);
         
-        inkColors = new HashMap<MaterialWithData,ChatColor>();
+        inkColors = new HashMap<ItemStack,ChatColor>();
 
         Iterator it = inksMap.entrySet().iterator();
         while (it.hasNext()) {
@@ -360,7 +360,7 @@ public class Writable extends JavaPlugin {
             String inkString = (String)pair.getKey();
             String colorString = (String)pair.getValue();
 
-            MaterialWithData ink = lookupInk(inkString);
+            ItemStack ink = lookupInk(inkString);
             if (ink == null) { 
                 log.info("Invalid ink item: " + inkString);
                 // TODO: error
@@ -379,10 +379,11 @@ public class Writable extends JavaPlugin {
         }
     }
 
-    private MaterialWithData lookupInk(String s) {
+    private ItemStack lookupInk(String s) {
         Material material = Material.matchMaterial(s);
         if (material != null) {
-            return new MaterialWithData(material);
+            //return new MaterialWithData(material);
+            return new ItemStack(material, 1);
         }
         DyeColor dyeColor = getDyeColor(s);
         if (dyeColor == null) {
@@ -394,7 +395,8 @@ public class Writable extends JavaPlugin {
             ItemStack item = data.toItemStack();
 
             log.info("DURA"+item.getDurability());
-            return new MaterialWithData(item.getType(), item.getData());
+            //return new MaterialWithData(item.getType(), item.getData());
+            return item.clone();
         }
         return null;
     }
