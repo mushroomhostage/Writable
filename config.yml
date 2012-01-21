@@ -7,31 +7,48 @@ writingImplements:
     - blaze_rod
     - arrow
 writingSurfaces:
+    #- bed_block
     - bedrock
+    - bookshelf
+    #- brewing_stand
+    - brick
+    - brick_stairs
+    - burning_furnace   
+    #- chest
     - clay
     - cobblestone
+    - cobblestone_stairs
+    #- dispenser
+    - double_step
+    #- dragon_egg
+    #- enchantment_table
+    #- furnace
     - mossy_cobblestone
     - ice
     - sandstone
+    - sign
+    - sign_post
+    - wall_sign
     - obsidian
     - stone
     - bookshelf
-    - brick
+    - smooth_brick
+    - smooth_stairs
     - glass
     - step
     - glowstone
+    - huge_mushroom_1
+    - huge_mushroom_2
+    #- iron_door_block
     - nether_brick
+    #- note_block
     - log
     - wood
     - wood_stairs
-    - cobblestone_stairs
-    - brick_stairs
-    - smooth_stairs
     - nether_brick_stairs
-    #- craftingtable
-    #- chest
+    #- jukebox
+    #- workbench 
     #- door
-    - sign
     - thin_glass
     - wood_plate
     - stone_plate
@@ -39,10 +56,13 @@ writingSurfaces:
     - gold_ore
     - lapis_ore
     - redstone_ore
+    - glowing_redstone_ore
     - iron_ore
+    - diamond_ore
     - gold_block
     - lapis_block
     - iron_block
+    - diamond_block
     - water_lily
 inks:
     rose_red: dark_red

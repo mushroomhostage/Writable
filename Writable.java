@@ -189,7 +189,7 @@ class WritablePlayerListener extends PlayerListener {
         // Chat shows 10 recent lines normally
         // can press 't' to show 20 recent lines
         if (lines.size() > 10) {
-            player.sendMessage("Press 't' to show the full text of paper #"+id);
+            player.sendMessage("Press 't' to reveal the full text of paper #"+id);
         }
 
         // Text on paper is meant to only fit in one chat screen, so no pagination needed
