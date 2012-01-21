@@ -89,11 +89,20 @@ class WritablePlayerListener extends PlayerListener {
             // TODO: check block to ensure is realistically hard surface to write on (stone, not gravel or sand, etc.)
 
             // Check if have writing implement and ink
-            ChatColor color = Writable.getInkColor(player);
-            if (color == null) {
-                player.sendMessage("To write, you must have a writing implement and ink in your inventory");
+            int implementSlot = Writable.findImplementSlot(player);
+            if (implementSlot == -1) {
+                player.sendMessage("To write, you must have a writing implement in your hotbar");
                 return;
             }
+
+            ChatColor color = Writable.findInkColor(player, implementSlot);
+            if (color == null) {
+                ItemStack implementItem = player.getInventory().getItem(implementSlot);
+
+                player.sendMessage("To write, place ink next to the " + implementItem.getType().toString().toLowerCase() + " in your inventory");
+                return;
+            }
+
             player.sendMessage(color+"Writing");
             // TODO: optionally use up ink
 
@@ -374,7 +383,6 @@ public class Writable extends JavaPlugin {
                 continue;
             }
 
-            log.info("ink "+ink+" is "+inkColor);
             inkColors.put(ink, inkColor);
         }
     }
@@ -393,7 +401,6 @@ public class Writable extends JavaPlugin {
             data.setColor(dyeColor);
             ItemStack item = data.toItemStack();
 
-            log.info("DURA"+item.getDurability());
             return new MaterialWithData(item.getType(), item.getData());
         }
         return null;
@@ -443,31 +450,31 @@ public class Writable extends JavaPlugin {
     }
 
     // Find writing implement in player's inventory and matching ink color
-    public static ChatColor getInkColor(Player player) {
+    public static int findImplementSlot(Player player) {
         PlayerInventory inventory = player.getInventory();
 
         for (int i = 0; i < 9; i += 1) {
             ItemStack implementItem = inventory.getItem(i);
 
             if (isWritingImplement(implementItem)) {
-                log.info("Found implement: "+  implementItem);
-
-                ItemStack inkItem = inventory.getItem(i - 1);
-                ChatColor color = getChatColor(inkItem);
-                if (color == null) {
-                    inkItem = inventory.getItem(i + 1);
-                    color = getChatColor(inkItem);
-                    if (color == null) {
-                        log.info("No ink nearby");
-                        return null;
-                    }
-                }
-                return color;
+                return i;
             }
         }
 
-        log.info("No implement found");
-        return null;
+        return -1;
+    }
+
+    // Get nearby ink next to writing implement in inventory
+    public static ChatColor findInkColor(Player player, int implementSlot) {
+        PlayerInventory inventory = player.getInventory();
+        ItemStack inkItem = inventory.getItem(implementSlot - 1);
+        ChatColor color = getChatColor(inkItem);
+        if (color == null) {
+            inkItem = inventory.getItem(implementSlot + 1);
+            color = getChatColor(inkItem);
+        }
+
+        return color;
     }
 
     private static boolean isWritingImplement(ItemStack item) {
@@ -478,8 +485,6 @@ public class Writable extends JavaPlugin {
     private static ChatColor getChatColor(ItemStack item) {
         ChatColor color = inkColors.get(new MaterialWithData(item.getType(), item.getData()));
 
-        log.info("inkColors="+inkColors);
-       
         log.info("getChatColor("+item+") = "+color);
         return color;
     }
