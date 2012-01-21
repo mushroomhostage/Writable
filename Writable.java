@@ -88,7 +88,11 @@ class WritablePlayerListener extends PlayerListener {
 
             // TODO: prevent writing on >1 stacks? or try to shuffle around?
 
-            // TODO: check block to ensure is realistically hard surface to write on (stone, not gravel or sand, etc.)
+            // Check block to ensure is realistically hard surface to write on (stone, not gravel or sand, etc.)
+            if (!plugin.isWritingSurface(block)) {
+                player.sendMessage("You need a hard surface to write on, not "+block.getType().toString().toLowerCase());
+                return;
+            }
 
             // Check if have writing implement and ink
             int implementSlot = Writable.findImplementSlot(player);
@@ -174,7 +178,14 @@ class WritablePlayerListener extends PlayerListener {
         for (String line: lines) {
             player.sendMessage(" "+line);
         }
-        // TODO: page through, view
+
+        // Chat shows 10 recent lines normally
+        // can press 't' to show 20 recent lines
+        if (lines.size() > 10) {
+            player.sendMessage("Press 't' to show the full text of paper #"+id);
+        }
+
+        // Text on paper is meant to only fit in one chat screen, so no pagination needed
     }
 
 
@@ -510,6 +521,10 @@ public class Writable extends JavaPlugin {
 
     private static boolean isWritingImplement(ItemStack item) {
         return writingImplementMaterials.contains(item.getType());
+    }
+
+    public static boolean isWritingSurface(Block block) {
+        return writingSurfaceMaterials.contains(block.getType());
     }
 
     // Get chat color used for given writing ink
