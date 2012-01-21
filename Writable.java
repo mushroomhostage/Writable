@@ -66,6 +66,7 @@ class WritablePlayerListener extends PlayerListener {
 
     static private ConcurrentHashMap<Player, ItemStack> savedItemStack = new ConcurrentHashMap<Player, ItemStack>();
     static private ConcurrentHashMap<Player, Integer> savedItemSlot = new ConcurrentHashMap<Player, Integer>();
+    static public ConcurrentHashMap<Player, ChatColor> currentColor = new ConcurrentHashMap<Player, ChatColor>();
 
     public WritablePlayerListener(Plugin pl) {
         plugin = pl;
@@ -103,10 +104,9 @@ class WritablePlayerListener extends PlayerListener {
                 return;
             }
 
-            player.sendMessage(color+"Writing");
+            player.sendMessage(color+"Right-click to write");
             // TODO: optionally use up ink
-
-
+            
             // If blank, assign new ID
             short id = item.getDurability();
             if (id == 0) {
@@ -116,9 +116,10 @@ class WritablePlayerListener extends PlayerListener {
             log.info("This is book #"+id);
 
 
-            // Save off old item in hand to restore
+            // Save off old item in hand to restore, and ink color to use
             savedItemStack.put(player, item);
             savedItemSlot.put(player, player.getInventory().getHeldItemSlot());
+            currentColor.put(player, color); 
 
             // Quickly change to sign, so double right-click paper = place sign to write on
             player.setItemInHand(new ItemStack(Material.SIGN, 1));
@@ -145,6 +146,7 @@ class WritablePlayerListener extends PlayerListener {
 
         savedItemStack.remove(player);
         savedItemSlot.remove(player);
+        currentColor.remove(player);
 
         return items;
     }
@@ -229,11 +231,14 @@ class WritableBlockListener extends BlockListener {
         // Destroy sign
         block.setType(Material.AIR);
 
+        ChatColor color = WritablePlayerListener.currentColor.get(player);
+
         // Restore previous item 
         ItemStack paperItem = WritablePlayerListener.restoreSavedItem(player);
 
         // Write
         int id = paperItem.getDurability();
+        lines[0] = color + lines[0];
         Writable.writePaper(id, lines);
 
         // Finish up
