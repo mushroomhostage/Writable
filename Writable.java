@@ -67,7 +67,8 @@ class WritablePlayerListener extends PlayerListener {
 
     static private ConcurrentHashMap<Player, ItemStack> savedItemStack = new ConcurrentHashMap<Player, ItemStack>();
     static private ConcurrentHashMap<Player, Integer> savedItemSlot = new ConcurrentHashMap<Player, Integer>();
-    static public ConcurrentHashMap<Player, ChatColor> currentColor = new ConcurrentHashMap<Player, ChatColor>();
+    static public ConcurrentHashMap<Player, Integer> savedInkSlot = new ConcurrentHashMap<Player, Integer>();
+    static public ConcurrentHashMap<Player, ChatColor> currentColor = new ConcurrentHashMap<Player, ChatColor>();   // used in onSignChange
 
     public WritablePlayerListener(Writable pl) {
         plugin = pl;
@@ -109,23 +110,13 @@ class WritablePlayerListener extends PlayerListener {
                 player.sendMessage("To write, place ink next to the " + implementItem.getType().toString().toLowerCase() + " in your inventory");
                 return;
             }
+
+            savedInkSlot.put(player, inkSlot);  // for consuming ink
+
             ItemStack inkItem = player.getInventory().getItem(inkSlot);
             ChatColor color = Writable.getChatColor(inkItem);
 
-            // Optionally use up ink
-            if (plugin.isInkConsumable()) {
-                int amount = inkItem.getAmount();
-
-                if (amount > 1) {
-                    inkItem.setAmount(amount - 1);
-                } else {
-                    player.getInventory().clear(inkSlot);
-                }
-                // Docs say deprecated and should not be relied on, but, client won't update without it
-                player.updateInventory();
-            }
-
-            
+           
             // If blank, assign new ID
             short id = item.getDurability();
             if (id == 0) {
@@ -172,6 +163,7 @@ class WritablePlayerListener extends PlayerListener {
         savedItemStack.remove(player);
         savedItemSlot.remove(player);
         currentColor.remove(player);
+        savedInkSlot.remove(player);
 
         return items;
     }
@@ -278,7 +270,23 @@ class WritableBlockListener extends BlockListener {
 
         ChatColor color = WritablePlayerListener.currentColor.get(player);
 
-        // Restore previous item 
+        // Optionally use up ink
+        if (Writable.isInkConsumable() && !isSignWritingBlank(lines)) {
+            int inkSlot = WritablePlayerListener.savedInkSlot.get(player);
+            ItemStack inkItem = player.getInventory().getItem(inkSlot);
+            int amount = inkItem.getAmount();
+
+            if (amount > 1) {
+                inkItem.setAmount(amount - 1);
+            } else {
+                player.getInventory().clear(inkSlot);
+            }
+            // Docs say deprecated and should not be relied on, but, client won't update without it
+            player.updateInventory();
+        }
+        WritablePlayerListener.savedInkSlot.remove(player);
+
+        // Restore previous item (paper), replacing sign, and so we can write on it
         ItemStack paperItem = WritablePlayerListener.restoreSavedItem(player);
 
         // Write
@@ -288,6 +296,15 @@ class WritableBlockListener extends BlockListener {
         // Finish up
         Writable.setWritingState(player, WritingState.NOT_WRITING);
         WritablePlayerListener.readPaperToPlayer(player, id);
+    }
+
+    private static boolean isSignWritingBlank(String[] lines) {
+        for (int i = 0; i < lines.length; i += 1) {
+            if (lines[i] != null && !lines[i].equals("")) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 
@@ -532,7 +549,6 @@ public class Writable extends JavaPlugin {
         inkSlot = implementSlot - 1;
         if (inkSlot > 0) {
             inkItem = inventory.getItem(inkSlot);
-            log.info("findInkSlot-1="+inkItem+"s"+inkSlot);
             if (getChatColor(inkItem) != null) {
                 return inkSlot;
             }
@@ -540,7 +556,6 @@ public class Writable extends JavaPlugin {
 
         inkSlot = implementSlot + 1;
         inkItem = inventory.getItem(inkSlot);
-        log.info("findInkSlot+1="+inkItem+"s"+inkSlot);
         if (getChatColor(inkItem) != null) {
             return inkSlot;
         }
