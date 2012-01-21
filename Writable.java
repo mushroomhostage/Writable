@@ -456,11 +456,37 @@ public class Writable extends JavaPlugin {
             inkColors.put(ink, inkColor);
         }
 
-        nextPaperID = (short)getConfig().getInt("nextPaperID", 1);
+        nextPaperID = (short)getConfig().getInt("nextPaperID", -1);
+        if (nextPaperID == -1) {
+            scanNextPaperID();
+        }
+
+
         paperLengthLineCap = getConfig().getInt("paperLengthLineCap", 7);
         consumeInk = getConfig().getBoolean("consumeInk", false);
 
         loadPapers();
+    }
+
+    private short scanNextPaperID() {
+        File file;
+        short id = 0;
+
+        log.info("Scanning to determine next paper ID");
+        do
+        {
+            id += 1;
+            String path = pathForPaper(id);
+            file = new File(path);
+        } while (file.exists());
+
+        log.info("Using next available ID: "+id);
+
+        nextPaperID = id;
+        getConfig().set("nextPaperID", nextPaperID);
+        saveConfig();
+
+        return id;
     }
 
     private MaterialWithData lookupInk(String s) {
