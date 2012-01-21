@@ -51,7 +51,7 @@ class WritableSignPlaceTimeoutTask implements Runnable {
 
     public void run() {
         if (Writable.getWritingState(player) != WritingState.PLACED_SIGN) {
-            log.info("did not place sign in time");
+            //log.info("did not place sign in time");
             
             WritablePlayerListener.restoreSavedItem(player);
             Writable.setWritingState(player, WritingState.NOT_WRITING);
@@ -106,7 +106,6 @@ class WritablePlayerListener extends PlayerListener {
             if (inkSlot == -1) {
                 ItemStack implementItem = player.getInventory().getItem(implementSlot);
 
-                log.info("slot"+implementSlot);
                 player.sendMessage("To write, place ink next to the " + implementItem.getType().toString().toLowerCase() + " in your inventory");
                 return;
             }
@@ -204,7 +203,6 @@ class WritablePlayerListener extends PlayerListener {
         if (item != null && item.getType() == Material.PAPER) {
             int id = item.getDurability();
 
-            // TODO: only if not zero
             readPaperToPlayer(player, id);
         }
     }
@@ -245,9 +243,6 @@ class WritableBlockListener extends BlockListener {
                 Bukkit.getScheduler().cancelTask(taskID);
 
                 Writable.setWritingState(player, WritingState.PLACED_SIGN);
-                // TODO: store paper ID
-            } else {
-                log.info("Place non-paper sign");
             }
         }
     }
@@ -259,7 +254,6 @@ class WritableBlockListener extends BlockListener {
 
         WritingState state = Writable.getWritingState(player);
         if (state != WritingState.PLACED_SIGN) {    
-            log.info("Changing sign not from paper");
             return;
         }
 
@@ -605,8 +599,7 @@ public class Writable extends JavaPlugin {
     }
 
     // Try to make paper stack by damage ID, or otherwise stack by one
-    // Based on http://code.google.com/p/nisovin-minecraft-bukkit-plugins/source/browse/trunk/BookWorm/src/com/nisovin/bookworm/BookWorm.java
-    // http://dev.bukkit.org/server-mods/bookworm/
+    // Black magic
     private void configurePaperStacking() {
         try {
         boolean ok = false;
@@ -621,7 +614,7 @@ public class Writable extends JavaPlugin {
                     ok = true;
                 }
             } catch (Exception e) {
-                log.info("Not stacking papers together");
+                //log.info("Not stacking papers together");
             }
             if (!ok) {
                 // otherwise limit stack size to 1
@@ -629,7 +622,7 @@ public class Writable extends JavaPlugin {
                 field.setAccessible(true);
                 field.setInt(net.minecraft.server.Item.PAPER, 1);
             } else {
-                log.info("Successfully changed paper stacking");
+                //log.info("Successfully changed paper stacking");
             }
         } catch (Exception e) {
             e.printStackTrace();
