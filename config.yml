@@ -1,4 +1,5 @@
 nextPaperID: 1
+paperLengthLineCap: 7
 writingImplements:
     - feather
     - stick

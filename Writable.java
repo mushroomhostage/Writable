@@ -112,6 +112,11 @@ class WritablePlayerListener extends PlayerListener {
             if (id == 0) {
                 id = plugin.getNewPaperID();
                 item.setDurability(id);
+            } else {
+                if (Writable.isPaperFull(id)) {
+                    player.sendMessage("Sorry, this paper is full");
+                    return;
+                }
             }
             
             player.sendMessage(color+"Right-click to write on paper #"+id);
@@ -319,6 +324,7 @@ public class Writable extends JavaPlugin {
     static private HashMap<MaterialWithData,ChatColor> inkColors;
 
     static private short nextPaperID;
+    static private int paperLengthLineCap;
 
 
     public void onEnable() {
@@ -407,6 +413,7 @@ public class Writable extends JavaPlugin {
         }
 
         nextPaperID = (short)getConfig().getInt("nextPaperID", 1);
+        paperLengthLineCap = getConfig().getInt("paperLengthLineCap", 7);
 
         loadPapers();
     }
@@ -509,7 +516,6 @@ public class Writable extends JavaPlugin {
     private static ChatColor getChatColor(ItemStack item) {
         ChatColor color = inkColors.get(new MaterialWithData(item.getType(), item.getData()));
 
-        log.info("getChatColor("+item+") = "+color);
         return color;
     }
 
@@ -698,5 +704,13 @@ public class Writable extends JavaPlugin {
         saveConfig();
 
         return id;
+    }
+
+    // Return whether more text can be written on the paper
+    static boolean isPaperFull(int id) {
+        ArrayList<String> lines = paperTexts.get(id);
+
+        // formatLines() adds up to 2 lines of text
+        return lines != null && lines.size() > paperLengthLineCap;
     }
 }
