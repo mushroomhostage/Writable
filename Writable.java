@@ -233,6 +233,51 @@ class WritableBlockListener extends BlockListener {
     }
 }
 
+// Like Material, but also has MaterialData
+// Like ItemStack, but different data is different!
+class MaterialWithData implements Comparable {
+    int material;
+    byte data;
+    
+    public MaterialWithData(Material m, MaterialData d) {
+        material = m.getId();
+        data = d.getData();
+    }
+
+    public MaterialWithData(Material m) {
+        material = m.getId();
+        data = 0;
+    }
+
+    public int hashCode() {
+        return material * data;
+    }
+
+    public boolean equals(Object rhs) {
+        return compareTo(rhs) == 0;
+    }
+
+    public int compareTo(Object obj) {
+        int ret;
+
+        if (!(obj instanceof MaterialWithData)) {
+            return -1;
+        }
+        MaterialWithData rhs = (MaterialWithData)obj;
+
+        ret = material - rhs.material;
+        if (ret != 0) {
+            return ret;
+        }
+
+        return data - rhs.data;
+    }
+
+    public String toString() {
+        return "MaterialWithData("+material+","+data+")";
+    }
+}
+
 
 public class Writable extends JavaPlugin {
     static Logger log = Logger.getLogger("Minecraft");
@@ -244,7 +289,7 @@ public class Writable extends JavaPlugin {
 
     static private List<Material> writingImplementMaterials;
     static private List<Material> writingSurfaceMaterials;
-    static private HashMap<ItemStack,ChatColor> inkColors;
+    static private HashMap<MaterialWithData,ChatColor> inkColors;
 
 
     public void onEnable() {
@@ -307,7 +352,7 @@ public class Writable extends JavaPlugin {
         MemorySection inksSection = (MemorySection)getConfig().get("inks");
         Map<String,Object> inksMap = inksSection.getValues(true);
         
-        inkColors = new HashMap<ItemStack,ChatColor>();
+        inkColors = new HashMap<MaterialWithData,ChatColor>();
 
         Iterator it = inksMap.entrySet().iterator();
         while (it.hasNext()) {
@@ -315,10 +360,8 @@ public class Writable extends JavaPlugin {
             String inkString = (String)pair.getKey();
             String colorString = (String)pair.getValue();
 
-            log.info("ink "+inkString+" = "+colorString);
-
-            ItemStack inkItem = lookupItemStack(inkString);
-            if (inkItem == null) { 
+            MaterialWithData ink = lookupInk(inkString);
+            if (ink == null) { 
                 log.info("Invalid ink item: " + inkString);
                 // TODO: error
                 continue;
@@ -331,14 +374,15 @@ public class Writable extends JavaPlugin {
                 continue;
             }
 
-            inkColors.put(inkItem, inkColor);
+            log.info("ink "+ink+" is "+inkColor);
+            inkColors.put(ink, inkColor);
         }
     }
 
-    private ItemStack lookupItemStack(String s) {
+    private MaterialWithData lookupInk(String s) {
         Material material = Material.matchMaterial(s);
         if (material != null) {
-            return new ItemStack(material, 1);
+            return new MaterialWithData(material);
         }
         DyeColor dyeColor = getDyeColor(s);
         if (dyeColor == null) {
@@ -350,7 +394,8 @@ public class Writable extends JavaPlugin {
             data.setColor(dyeColor);
 
             item.setData((MaterialData)data);
-            return item;
+
+            return new MaterialWithData(item.getType(), item.getData());
         }
         return null;
     }
@@ -433,6 +478,8 @@ public class Writable extends JavaPlugin {
     private static ChatColor getChatColor(ItemStack item) {
         // TODO: fix ink_sack lookup
         ChatColor color = inkColors.get(item);
+
+        log.info("inkColors="+inkColors);
        
         log.info("getChatColor("+item+") = "+color);
         return color;
