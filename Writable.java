@@ -101,15 +101,30 @@ class WritablePlayerListener extends PlayerListener {
                 return;
             }
 
-            ChatColor color = Writable.findInkColor(player, implementSlot);
-            if (color == null) {
+            int inkSlot = Writable.findInkSlot(player, implementSlot);
+            if (inkSlot == -1) {
                 ItemStack implementItem = player.getInventory().getItem(implementSlot);
 
+                log.info("slot"+implementSlot);
                 player.sendMessage("To write, place ink next to the " + implementItem.getType().toString().toLowerCase() + " in your inventory");
                 return;
             }
+            ItemStack inkItem = player.getInventory().getItem(inkSlot);
+            ChatColor color = Writable.getChatColor(inkItem);
 
             // TODO: optionally use up ink
+            if (plugin.isInkConsumable()) {
+                int amount = inkItem.getAmount();
+
+                if (amount > 1) {
+                    log.info("dec");
+                    inkItem.setAmount(amount - 1);
+                } else {
+                    log.info("set0");
+                    player.getInventory().setItem(inkSlot, null);
+                }
+            }
+
             
             // If blank, assign new ID
             short id = item.getDurability();
@@ -336,6 +351,7 @@ public class Writable extends JavaPlugin {
 
     static private short nextPaperID;
     static private int paperLengthLineCap;
+    static private boolean consumeInk;
 
 
     public void onEnable() {
@@ -425,6 +441,7 @@ public class Writable extends JavaPlugin {
 
         nextPaperID = (short)getConfig().getInt("nextPaperID", 1);
         paperLengthLineCap = getConfig().getInt("paperLengthLineCap", 7);
+        consumeInk = getConfig().getBoolean("consumeInk", false);
 
         loadPapers();
     }
@@ -506,17 +523,29 @@ public class Writable extends JavaPlugin {
         return -1;
     }
 
-    // Get nearby ink next to writing implement in inventory
-    public static ChatColor findInkColor(Player player, int implementSlot) {
+    // Get nearby ink next to writing implement in inventory, if any
+    public static int findInkSlot(Player player, int implementSlot) {
         PlayerInventory inventory = player.getInventory();
-        ItemStack inkItem = inventory.getItem(implementSlot - 1);
-        ChatColor color = getChatColor(inkItem);
-        if (color == null) {
-            inkItem = inventory.getItem(implementSlot + 1);
-            color = getChatColor(inkItem);
+        ItemStack inkItem;
+        int inkSlot;
+
+        inkSlot = implementSlot - 1;
+        if (inkSlot > 0) {
+            inkItem = inventory.getItem(inkSlot);
+            log.info("findInkSlot-1="+inkItem+"s"+inkSlot);
+            if (getChatColor(inkItem) != null) {
+                return inkSlot;
+            }
         }
 
-        return color;
+        inkSlot = implementSlot + 1;
+        inkItem = inventory.getItem(inkSlot);
+        log.info("findInkSlot+1="+inkItem+"s"+inkSlot);
+        if (getChatColor(inkItem) != null) {
+            return inkSlot;
+        }
+
+        return -1;
     }
 
     private static boolean isWritingImplement(ItemStack item) {
@@ -528,7 +557,7 @@ public class Writable extends JavaPlugin {
     }
 
     // Get chat color used for given writing ink
-    private static ChatColor getChatColor(ItemStack item) {
+    public static ChatColor getChatColor(ItemStack item) {
         ChatColor color = inkColors.get(new MaterialWithData(item.getType(), item.getData()));
 
         return color;
@@ -576,7 +605,7 @@ public class Writable extends JavaPlugin {
     static public void setWritingState(Player player, WritingState newState) {
         WritingState oldState = getWritingState(player);
 
-        log.info("State change "+player.getName()+": "+oldState+" -> "+newState);
+        //log.info("State change "+player.getName()+": "+oldState+" -> "+newState);
 
         if (newState == WritingState.NOT_WRITING) {
             writingState.remove(player);
@@ -727,5 +756,9 @@ public class Writable extends JavaPlugin {
 
         // formatLines() adds up to 2 lines of text
         return lines != null && lines.size() > paperLengthLineCap;
+    }
+
+    static boolean isInkConsumable() {
+        return consumeInk;
     }
 }
