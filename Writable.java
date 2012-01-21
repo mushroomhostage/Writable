@@ -21,6 +21,7 @@ import org.bukkit.event.*;
 import org.bukkit.event.block.*;
 import org.bukkit.event.player.*;
 import org.bukkit.Material.*;
+import org.bukkit.material.*;
 import org.bukkit.block.*;
 import org.bukkit.entity.*;
 import org.bukkit.command.*;
@@ -258,6 +259,7 @@ public class Writable extends JavaPlugin {
 
     static List<Material> writingImplementMaterials;
     static List<Material> writingSurfaceMaterials;
+    static HashMap<ItemStack,ChatColor> inkColors;
 
     private void loadConfig() {
         List<String> implementsStrings = getConfig().getStringList("writingImplements");
@@ -294,6 +296,8 @@ public class Writable extends JavaPlugin {
 
         MemorySection inksSection = (MemorySection)getConfig().get("inks");
         Map<String,Object> inksMap = inksSection.getValues(true);
+        
+        inkColors = new HashMap<ItemStack,ChatColor>();
 
         Iterator it = inksMap.entrySet().iterator();
         while (it.hasNext()) {
@@ -302,9 +306,87 @@ public class Writable extends JavaPlugin {
             String colorString = (String)pair.getValue();
 
             log.info("ink "+inkString+" = "+colorString);
+
+            ItemStack inkItem = lookupItemStack(inkString);
+            if (inkItem == null) { 
+                log.info("Invalid ink item: " + inkString);
+                // TODO: error
+                continue;
+            }
+
+            ChatColor inkColor = ChatColor.valueOf(colorString.toUpperCase());
+            if (inkColor == null) {
+                log.info("Invalid ink color: " + colorString);
+                // TODO: error
+                continue;
+            }
+
+            inkColors.put(inkItem, inkColor);
         }
     }
 
+    private ItemStack lookupItemStack(String s) {
+        Material material = Material.matchMaterial(s);
+        if (material != null) {
+            return new ItemStack(material, 1);
+        }
+        DyeColor dyeColor = getDyeColor(s);
+        if (dyeColor == null) {
+            dyeColor = getDyeColor(s.replace("_dye", ""));
+        }
+        if (dyeColor != null) {
+            ItemStack item = new ItemStack(Material.INK_SACK, 1);
+            Dye data = new Dye();
+            data.setColor(dyeColor);
+
+            item.setData((MaterialData)data);
+            return item;
+        }
+        return null;
+    }
+
+    private DyeColor getDyeColor(String s) {
+        // Unfortunately Bukkit doesn't have these names anywhere I can find
+        // http://www.minecraftwiki.net/wiki/Data_values#Dyes
+        if (s.equals("ink_sac")) {
+            return DyeColor.BLACK;
+        } else if (s.equals("rose_red")) {
+            return DyeColor.RED;
+        } else if (s.equals("cactus_green")) {
+            return DyeColor.GREEN;
+        } else if (s.equals("cocoa_beans")) {
+            return DyeColor.BROWN;
+        } else if (s.equals("lapis_lazuli")) {
+            return DyeColor.BLUE;
+        } else if (s.equals("purple")) {
+            return DyeColor.PURPLE;
+        } else if (s.equals("cyan")) {
+            return DyeColor.CYAN;
+        } else if (s.equals("light_gray")) {
+            return DyeColor.SILVER;
+        } else if (s.equals("gray")) {
+            return DyeColor.GRAY;
+        } else if (s.equals("pink")) {
+            return DyeColor.PINK;
+        } else if (s.equals("lime")) {
+            return DyeColor.LIME;
+        } else if (s.equals("dandelion_yellow")) {
+            return DyeColor.YELLOW;
+        } else if (s.equals("light_blue")) {
+            return DyeColor.LIGHT_BLUE;
+        } else if (s.equals("magenta")) {
+            return DyeColor.MAGENTA;
+        } else if (s.equals("orange")) {
+            return DyeColor.ORANGE;
+        } else if (s.equals("bone_meal")) {
+            return DyeColor.WHITE;
+        }
+        try {
+            return DyeColor.valueOf(s);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     // Try to make paper stack by damage ID, or otherwise stack by one
     // Based on http://code.google.com/p/nisovin-minecraft-bukkit-plugins/source/browse/trunk/BookWorm/src/com/nisovin/bookworm/BookWorm.java
