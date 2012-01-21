@@ -112,17 +112,17 @@ class WritablePlayerListener extends PlayerListener {
             ItemStack inkItem = player.getInventory().getItem(inkSlot);
             ChatColor color = Writable.getChatColor(inkItem);
 
-            // TODO: optionally use up ink
+            // Optionally use up ink
             if (plugin.isInkConsumable()) {
                 int amount = inkItem.getAmount();
 
                 if (amount > 1) {
-                    log.info("dec");
                     inkItem.setAmount(amount - 1);
                 } else {
-                    log.info("set0");
-                    player.getInventory().setItem(inkSlot, null);
+                    player.getInventory().clear(inkSlot);
                 }
+                // Docs say deprecated and should not be relied on, but, client won't update without it
+                player.updateInventory();
             }
 
             
