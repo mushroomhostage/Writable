@@ -10,10 +10,11 @@ import java.util.UUID;
 import java.util.Iterator;
 import java.util.logging.Logger;
 import java.util.concurrent.ConcurrentHashMap;
-import java.io.*;
+import java.util.Formatter;
 import java.lang.Byte;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.io.*;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.*;
@@ -200,9 +201,9 @@ class WritablePlayerListener extends PlayerListener {
 
 class WritableBlockListener extends BlockListener {
     Logger log = Logger.getLogger("Minecraft");
-    Plugin plugin;
+    Writable plugin;
 
-    public WritableBlockListener(Plugin pl) {
+    public WritableBlockListener(Writable pl) {
         plugin = pl;
     }
 
@@ -251,8 +252,7 @@ class WritableBlockListener extends BlockListener {
 
         // Write
         int id = paperItem.getDurability();
-        lines[0] = color + lines[0];
-        Writable.writePaper(id, lines);
+        plugin.writePaper(id, lines, color);
 
         // Finish up
         Writable.setWritingState(player, WritingState.NOT_WRITING);
@@ -325,9 +325,6 @@ public class Writable extends JavaPlugin {
         writingState = new ConcurrentHashMap<Player, WritingState>();
 
         loadConfig();
-
-        // TODO: load from disk
-        paperTexts = new ConcurrentHashMap<Integer, ArrayList<String>>();
 
         playerListener = new WritablePlayerListener(this);
         blockListener = new WritableBlockListener(this);
@@ -410,6 +407,8 @@ public class Writable extends JavaPlugin {
         }
 
         nextPaperID = (short)getConfig().getInt("nextPaperID", 1);
+
+        loadPapers();
     }
 
     private MaterialWithData lookupInk(String s) {
@@ -547,7 +546,7 @@ public class Writable extends JavaPlugin {
     }
 
     public void onDisable() {
-        // TODO: save paperTexts to disk
+        saveConfig();
 
         log.info("Writable disabled");
     }
@@ -572,7 +571,7 @@ public class Writable extends JavaPlugin {
     }
 
     // Manipulate paper text
-    static public void writePaper(int id, String[] newLines) {
+    public void writePaper(int id, String[] newLines, ChatColor color) {
         ArrayList<String> lines = readPaper(id);
 
         // Add non-empty lines
@@ -588,12 +587,73 @@ public class Writable extends JavaPlugin {
                 continue;
             }
 
-            lines.add(line);
+            lines.add(color + line);
         }
 
         paperTexts.put(new Integer(id), lines);
 
-        // TODO: save to disk now?
+        savePaper(id);
+    }
+
+    // Write paper contents to disk
+    public void savePaper(int id) {
+        String path = pathForPaper(id);
+        log.info("saving to "+path);
+
+        try {
+            BufferedWriter out = new BufferedWriter(new FileWriter(path));
+
+            ArrayList<String> lines = readPaper(id);
+            for (String line: lines) {
+                out.write(line);
+                out.newLine();
+            }
+            out.close();
+        } catch (IOException e) {
+            log.info("Error saving #"+id+": "+e.getMessage());
+        }
+    }
+
+    private String pathForPaper(int id) {
+        String filename = String.format("%4x", id).replace(" ","0");    // TODO: %.4x
+        String path = getDataFolder() + System.getProperty("file.separator") + filename + ".txt";
+
+        return path;
+    }
+
+    private ArrayList<String> loadPaper(int id) {
+        String path = pathForPaper(id);
+        ArrayList<String> lines = new ArrayList<String>();
+
+        try {
+            BufferedReader in = new BufferedReader(new FileReader(path));
+            String line;
+            do
+            {
+                line = in.readLine();
+
+                if (line != null) {
+                    lines.add(line);
+                }
+            } while(line != null);
+        } catch (IOException e) {
+            log.info("Error loading paper #"+id+": "+e.getMessage());
+            // may have been deleted
+            return new ArrayList<String>();
+        }
+
+        return lines;
+    }
+
+    // Load all papers from disk
+    private void loadPapers() {
+        paperTexts = new ConcurrentHashMap<Integer, ArrayList<String>>();
+
+        for (int i = 1; i < nextPaperID; i += 1) {
+            ArrayList<String> lines = loadPaper(i);
+
+            paperTexts.put(i, lines);
+        }
     }
 
     static public ArrayList<String> readPaper(int id) {

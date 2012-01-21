@@ -45,7 +45,7 @@ writingSurfaces:
 inks:
     rose_red: dark_red
     dandelion_yellow: yellow
-    lapis_lazuli: blue
+    lapis_lazuli: light_blue
     cactus_green: dark_green
     ink_sac: black
     bone_meal: white
