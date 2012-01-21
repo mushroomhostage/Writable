@@ -88,7 +88,15 @@ class WritablePlayerListener extends PlayerListener {
 
             // TODO: check block to ensure is realistically hard surface to write on (stone, not gravel or sand, etc.)
 
-            // TODO: check if have writing implement (ink sac), if so use up
+            // Check if have writing implement and ink
+            ChatColor color = Writable.getInkColor(player);
+            if (color == null) {
+                player.sendMessage("To write, you must have a writing implement and ink in your inventory");
+                return;
+            }
+            player.sendMessage(color+"Writing");
+            // TODO: optionally use up ink
+
 
             // If blank, assign new ID
             short id = item.getDurability();
@@ -234,6 +242,11 @@ public class Writable extends JavaPlugin {
     static private ConcurrentHashMap<Player, WritingState> writingState;
     static private ConcurrentHashMap<Integer, ArrayList<String>> paperTexts;    // TODO: paper class?
 
+    static private List<Material> writingImplementMaterials;
+    static private List<Material> writingSurfaceMaterials;
+    static private HashMap<ItemStack,ChatColor> inkColors;
+
+
     public void onEnable() {
         writingState = new ConcurrentHashMap<Player, WritingState>();
 
@@ -257,9 +270,6 @@ public class Writable extends JavaPlugin {
         log.info("Writable enabled");
     }
 
-    static List<Material> writingImplementMaterials;
-    static List<Material> writingSurfaceMaterials;
-    static HashMap<ItemStack,ChatColor> inkColors;
 
     private void loadConfig() {
         List<String> implementsStrings = getConfig().getStringList("writingImplements");
@@ -386,6 +396,46 @@ public class Writable extends JavaPlugin {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    // Find writing implement in player's inventory and matching ink color
+    public static ChatColor getInkColor(Player player) {
+        PlayerInventory inventory = player.getInventory();
+
+        for (int i = 0; i < 9; i += 1) {
+            ItemStack implementItem = inventory.getItem(i);
+
+            if (isWritingImplement(implementItem)) {
+                log.info("Found implement: "+  implementItem);
+
+                ItemStack inkItem = inventory.getItem(i - 1);
+                ChatColor color = getChatColor(inkItem);
+                if (color == null) {
+                    inkItem = inventory.getItem(i + 1);
+                    color = getChatColor(inkItem);
+                    if (color == null) {
+                        log.info("No ink nearby");
+                        return null;
+                    }
+                }
+                return color;
+            }
+        }
+
+        log.info("No implement found");
+        return null;
+    }
+
+    private static boolean isWritingImplement(ItemStack item) {
+        return writingImplementMaterials.contains(item.getType());
+    }
+
+    private static ChatColor getChatColor(ItemStack item) {
+        // TODO: fix ink_sack lookup
+        ChatColor color = inkColors.get(item);
+       
+        log.info("getChatColor("+item+") = "+color);
+        return color;
     }
 
     // Try to make paper stack by damage ID, or otherwise stack by one
