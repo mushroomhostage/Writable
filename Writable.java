@@ -62,13 +62,13 @@ class WritableSignPlaceTimeoutTask implements Runnable {
 
 class WritablePlayerListener extends PlayerListener {
     Logger log = Logger.getLogger("Minecraft");
-    Plugin plugin;
+    Writable plugin;
 
     static private ConcurrentHashMap<Player, ItemStack> savedItemStack = new ConcurrentHashMap<Player, ItemStack>();
     static private ConcurrentHashMap<Player, Integer> savedItemSlot = new ConcurrentHashMap<Player, Integer>();
     static public ConcurrentHashMap<Player, ChatColor> currentColor = new ConcurrentHashMap<Player, ChatColor>();
 
-    public WritablePlayerListener(Plugin pl) {
+    public WritablePlayerListener(Writable pl) {
         plugin = pl;
     }
 
@@ -104,16 +104,16 @@ class WritablePlayerListener extends PlayerListener {
                 return;
             }
 
-            player.sendMessage(color+"Right-click to write");
             // TODO: optionally use up ink
             
             // If blank, assign new ID
             short id = item.getDurability();
             if (id == 0) {
-                id = Writable.nextPaperID(); // TODO: choose next!
+                id = plugin.getNewPaperID();
                 item.setDurability(id);
             }
-            log.info("This is book #"+id);
+            
+            player.sendMessage(color+"Right-click to write on paper #"+id);
 
 
             // Save off old item in hand to restore, and ink color to use
@@ -152,9 +152,22 @@ class WritablePlayerListener extends PlayerListener {
     }
 
     static public void readPaperToPlayer(Player player, int id) {
-        ArrayList<String> lines = Writable.readPaper(id);
+        if (id == 0) {
+            player.sendMessage("Double right-click to write on this blank paper");
+            return;
+        }
 
-        player.sendMessage(lines + "");
+        ArrayList<String> lines = Writable.readPaper(id);
+        
+        if (lines.size() == 0) {
+            player.sendMessage("Paper #"+id+" is blank");
+            return;
+        }
+
+        player.sendMessage("Reading paper #"+id+":");
+        for (String line: lines) {
+            player.sendMessage(" "+line);
+        }
         // TODO: page through, view
     }
 
@@ -305,6 +318,8 @@ public class Writable extends JavaPlugin {
     static private List<Material> writingSurfaceMaterials;
     static private HashMap<MaterialWithData,ChatColor> inkColors;
 
+    static private short nextPaperID;
+
 
     public void onEnable() {
         writingState = new ConcurrentHashMap<Player, WritingState>();
@@ -331,6 +346,9 @@ public class Writable extends JavaPlugin {
 
 
     private void loadConfig() {
+        getConfig().options().copyDefaults(true);
+        saveConfig();
+
         List<String> implementsStrings = getConfig().getStringList("writingImplements");
 
         writingImplementMaterials = new ArrayList<Material>(); 
@@ -390,6 +408,8 @@ public class Writable extends JavaPlugin {
 
             inkColors.put(ink, inkColor);
         }
+
+        nextPaperID = (short)getConfig().getInt("nextPaperID", 1);
     }
 
     private MaterialWithData lookupInk(String s) {
@@ -586,8 +606,13 @@ public class Writable extends JavaPlugin {
         }
     }
 
-    static short nextPaperID() {
-        // TODO: get next!
-        return 1;
+    short getNewPaperID() {
+        short id = nextPaperID;
+
+        nextPaperID += 1;
+        getConfig().set("nextPaperID", nextPaperID);
+        saveConfig();
+
+        return id;
     }
 }
