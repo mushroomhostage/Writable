@@ -572,22 +572,32 @@ public class Writable extends JavaPlugin {
 
     // Manipulate paper text
     public void writePaper(int id, String[] newLines, ChatColor color) {
-        ArrayList<String> lines = readPaper(id);
+        final int MAX_SIGN_LINE_LENGTH = 15;
 
-        // Add non-empty lines
+        ArrayList<String> lines = readPaper(id);
+        StringBuffer lineBuffer = new StringBuffer();
+
+        // Add lines intelligently
         for (int i = 0; i < newLines.length; i += 1) {
             String line = newLines[i];
 
-            if (line == null || line.equals("")) {
-                // TODO: don't skip unless is last lines!
-                // sometimes want to retain spacing, add whitespace..
-                // foo\n\n\n -> foo
-                // foo\nbar -> foo\nbar
-                // \n\nfoo -> \n\nfoo
-                continue;
+            lineBuffer.append(line);
+
+            if (line.length() < MAX_SIGN_LINE_LENGTH) {
+                // Not at limit, add spacing
+                lineBuffer.append(" ");
             }
 
-            lines.add(color + line);
+
+            if (line == null || line.equals("")) {
+                // Blank lines = new paragraph
+                lines.add(color + lineBuffer.toString());
+                lineBuffer = new StringBuffer();
+            }
+        }
+
+        if (lineBuffer.toString().length() != 0) {
+            lines.add(color + lineBuffer.toString());
         }
 
         paperTexts.put(new Integer(id), lines);
