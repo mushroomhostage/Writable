@@ -292,14 +292,10 @@ public class Writable extends JavaPlugin {
             writingSurfaceMaterials.add(surfaceMaterial);
         }
 
-        log.info("writingImplementMaterials="+writingImplementMaterials);
-        log.info("writingSurfaceMaterials="+writingSurfaceMaterials);
+        MemorySection inksSection = (MemorySection)getConfig().get("inks");
+        Map<String,Object> inksMap = inksSection.getValues(true);
 
-        /*
-        log.info("inks="+ getConfig().getValues(true));
-        //Map<String,Object> inksStrings = getConfig().get("inks").map;
-        //Map<String,Object> inksStrings = getConfig().getConfigurationSection("inks").getValues(true);
-        Iterator it = inksStrings.entrySet().iterator();
+        Iterator it = inksMap.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry)it.next();
             String inkString = (String)pair.getKey();
@@ -307,7 +303,6 @@ public class Writable extends JavaPlugin {
 
             log.info("ink "+inkString+" = "+colorString);
         }
-        */
     }
 
 
