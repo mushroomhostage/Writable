@@ -572,37 +572,51 @@ public class Writable extends JavaPlugin {
 
     // Manipulate paper text
     public void writePaper(int id, String[] newLines, ChatColor color) {
-        final int MAX_SIGN_LINE_LENGTH = 15;
-
         ArrayList<String> lines = readPaper(id);
-        StringBuffer lineBuffer = new StringBuffer();
 
-        // Add lines intelligently
-        for (int i = 0; i < newLines.length; i += 1) {
-            String line = newLines[i];
-
-            lineBuffer.append(line);
-
-            if (line.length() < MAX_SIGN_LINE_LENGTH) {
-                // Not at limit, add spacing
-                lineBuffer.append(" ");
-            }
-
-
-            if (line == null || line.equals("")) {
-                // Blank lines = new paragraph
-                lines.add(color + lineBuffer.toString());
-                lineBuffer = new StringBuffer();
-            }
-        }
-
-        if (lineBuffer.toString().length() != 0) {
-            lines.add(color + lineBuffer.toString());
-        }
+        lines.addAll(formatLines(newLines, color));
 
         paperTexts.put(new Integer(id), lines);
 
         savePaper(id);
+    }
+
+    // Format 4x15 sign text reasonably into paragraphs
+    public ArrayList<String> formatLines(String[] inLines, ChatColor color) {
+        ArrayList<String> outLines = new ArrayList<String>();
+        final int MAX_SIGN_LINE_LENGTH = 15;
+
+        StringBuffer lineBuffer = new StringBuffer();
+
+        // Add lines intelligently
+        for (int i = 0; i < inLines.length; i += 1) {
+            String line = inLines[i];
+
+            // Blank line = new paragraph
+            if (line == null || line.equals("")) {
+                // unless blank themselves
+                if (lineBuffer.toString().length() != 0) {
+                    
+                    outLines.add(color + lineBuffer.toString());
+                    lineBuffer = new StringBuffer();
+                }
+            } else {
+                // Text lines = concatenate
+                lineBuffer.append(line);
+
+                if (line.length() < MAX_SIGN_LINE_LENGTH) {
+                    // Not at limit, add spacing
+                    // (if hit limit, probably not a word break)
+                    lineBuffer.append(" ");
+                }
+            }
+        }
+
+        if (lineBuffer.toString().length() != 0) {
+            outLines.add(color + lineBuffer.toString());
+        }
+
+        return outLines;
     }
 
     // Write paper contents to disk
