@@ -61,7 +61,7 @@ class WritableSignPlaceTimeoutTask implements Runnable {
     }
 }
 
-class WritablePlayerListener extends PlayerListener {
+class WritablePlayerListener implements Listener {
     Logger log = Logger.getLogger("Minecraft");
     Writable plugin;
 
@@ -72,8 +72,11 @@ class WritablePlayerListener extends PlayerListener {
 
     public WritablePlayerListener(Writable pl) {
         plugin = pl;
+
+        Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Block block = event.getClickedBlock();
         ItemStack item = event.getItem();
@@ -196,6 +199,7 @@ class WritablePlayerListener extends PlayerListener {
 
 
     // When change to in inventory slot, read back
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onItemHeldChange(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItem(event.getNewSlot());
@@ -208,6 +212,7 @@ class WritablePlayerListener extends PlayerListener {
     }
 
     // If pickup a paper with writing on it, let know
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerPickupItem(PlayerPickupItemEvent event) {
         ItemStack item = event.getItem().getItemStack();
 
@@ -220,14 +225,17 @@ class WritablePlayerListener extends PlayerListener {
 
 }
 
-class WritableBlockListener extends BlockListener {
+class WritableBlockListener implements Listener {
     Logger log = Logger.getLogger("Minecraft");
     Writable plugin;
 
     public WritableBlockListener(Writable pl) {
         plugin = pl;
+
+        Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockPlace(BlockPlaceEvent event) {
         Block block = event.getBlock();
         Player player = event.getPlayer();
@@ -247,6 +255,7 @@ class WritableBlockListener extends BlockListener {
         }
     }
 
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onSignChange(SignChangeEvent event) {
         Block block = event.getBlock();
         Player player = event.getPlayer();
@@ -276,6 +285,7 @@ class WritableBlockListener extends BlockListener {
                 player.getInventory().clear(inkSlot);
             }
             // Docs say deprecated and should not be relied on, but, client won't update without it
+            // TODO: fix non-deprecated method
             player.updateInventory();
         }
         WritablePlayerListener.savedInkSlot.remove(player);
@@ -372,13 +382,6 @@ public class Writable extends JavaPlugin {
 
         playerListener = new WritablePlayerListener(this);
         blockListener = new WritableBlockListener(this);
-
-        Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_INTERACT, playerListener, org.bukkit.event.Event.Priority.Normal, this);
-        Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_ITEM_HELD, playerListener, org.bukkit.event.Event.Priority.Normal, this);
-        Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_PICKUP_ITEM, playerListener, org.bukkit.event.Event.Priority.Normal, this);
-
-        Bukkit.getPluginManager().registerEvent(Event.Type.SIGN_CHANGE, blockListener, org.bukkit.event.Event.Priority.Normal, this);
-        Bukkit.getPluginManager().registerEvent(Event.Type.BLOCK_PLACE, blockListener, org.bukkit.event.Event.Priority.Normal, this);
 
         configurePaperStacking();
 
