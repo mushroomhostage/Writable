@@ -384,8 +384,6 @@ public class Writable extends JavaPlugin {
         blockListener = new WritableBlockListener(this);
 
         configurePaperStacking();
-
-        log.info("Writable enabled");
     }
 
 
@@ -642,8 +640,6 @@ public class Writable extends JavaPlugin {
 
     public void onDisable() {
         saveConfig();
-
-        log.info("Writable disabled");
     }
 
     // Manipulate state machine
