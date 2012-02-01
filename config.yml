@@ -1,6 +1,7 @@
 nextPaperID: -1
 paperLengthLineCap: 17
 consumeInk: false
+readOnSelect: true
 writingImplements:
     - feather
     - stick

@@ -82,75 +82,84 @@ class WritablePlayerListener implements Listener {
         ItemStack item = event.getItem();
         Player player = event.getPlayer();
         Action action = event.getAction();
+        
+        if (item != null && item.getType() == Material.PAPER) {
+            // Read
+            if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
+                short id = item.getDurability();
 
-        if (item != null && item.getType() == Material.PAPER && action == Action.RIGHT_CLICK_BLOCK) {
-            if (Writable.getWritingState(player) != WritingState.NOT_WRITING) {
-                player.sendMessage("You are already writing");
-                // TODO: stop other writing, restore (like timeout), cancel task? 
-                return;
-            }
+                readPaperToPlayer(player, id);
 
-            // TODO: prevent writing on >1 stacks? or try to shuffle around?
-
-            // Check block to ensure is realistically hard surface to write on (stone, not gravel or sand, etc.)
-            if (!plugin.isWritingSurface(block)) {
-                player.sendMessage("You need a hard surface to write on, not "+block.getType().toString().toLowerCase());
-                return;
-            }
-
-            // Check if have writing implement and ink
-            int implementSlot = Writable.findImplementSlot(player);
-            if (implementSlot == -1) {
-                player.sendMessage("To write, you must have a writing implement in your hotbar");
-                return;
-            }
-
-            int inkSlot = Writable.findInkSlot(player, implementSlot);
-            if (inkSlot == -1) {
-                ItemStack implementItem = player.getInventory().getItem(implementSlot);
-
-                player.sendMessage("To write, place ink next to the " + implementItem.getType().toString().toLowerCase() + " in your inventory");
-                return;
-            }
-
-            savedInkSlot.put(player, inkSlot);  // for consuming ink
-
-            ItemStack inkItem = player.getInventory().getItem(inkSlot);
-            ChatColor color = Writable.getChatColor(inkItem);
-
-           
-            // If blank, assign new ID
-            short id = item.getDurability();
-            if (id == 0) {
-                id = plugin.getNewPaperID();
-                item.setDurability(id);
-            } else {
-                if (Writable.isPaperFull(id)) {
-                    player.sendMessage("Sorry, this paper is full");
+            // Write
+            } else if (action == Action.RIGHT_CLICK_BLOCK) {
+                if (Writable.getWritingState(player) != WritingState.NOT_WRITING) {
+                    player.sendMessage("You are already writing");
+                    // TODO: stop other writing, restore (like timeout), cancel task? 
                     return;
                 }
+
+                // TODO: prevent writing on >1 stacks? or try to shuffle around?
+
+                // Check block to ensure is realistically hard surface to write on (stone, not gravel or sand, etc.)
+                if (!plugin.isWritingSurface(block)) {
+                    player.sendMessage("You need a hard surface to write on, not "+block.getType().toString().toLowerCase());
+                    return;
+                }
+
+                // Check if have writing implement and ink
+                int implementSlot = Writable.findImplementSlot(player);
+                if (implementSlot == -1) {
+                    player.sendMessage("To write, you must have a writing implement in your hotbar");
+                    return;
+                }
+
+                int inkSlot = Writable.findInkSlot(player, implementSlot);
+                if (inkSlot == -1) {
+                    ItemStack implementItem = player.getInventory().getItem(implementSlot);
+
+                    player.sendMessage("To write, place ink next to the " + implementItem.getType().toString().toLowerCase() + " in your inventory");
+                    return;
+                }
+
+                savedInkSlot.put(player, inkSlot);  // for consuming ink
+
+                ItemStack inkItem = player.getInventory().getItem(inkSlot);
+                ChatColor color = Writable.getChatColor(inkItem);
+
+               
+                // If blank, assign new ID
+                short id = item.getDurability();
+                if (id == 0) {
+                    id = plugin.getNewPaperID();
+                    item.setDurability(id);
+                } else {
+                    if (Writable.isPaperFull(id)) {
+                        player.sendMessage("Sorry, this paper is full");
+                        return;
+                    }
+                }
+                
+                player.sendMessage(color+"Right-click to write on paper #"+id);
+
+
+                // Save off old item in hand to restore, and ink color to use
+                savedItemStack.put(player, item);
+                savedItemSlot.put(player, player.getInventory().getHeldItemSlot());
+                currentColor.put(player, color); 
+
+                // Quickly change to sign, so double right-click paper = place sign to write on
+                player.setItemInHand(new ItemStack(Material.SIGN, 1));
+                // TODO: if have >1, save off old paper?
+
+                Writable.setWritingState(player, WritingState.CLICKED_PAPER);
+                
+                // Timeout to NOT_WRITING if our sign isn't used in a sufficient time
+                WritableSignPlaceTimeoutTask task = new WritableSignPlaceTimeoutTask(player);
+                int taskID = Bukkit.getScheduler().scheduleAsyncDelayedTask(plugin, task, plugin.getConfig().getLong("signTimeout", 2*20));
+
+                // Save task to cancel if did in fact make it to PLACED_SIGN in time
+                WritableSignPlaceTimeoutTask.taskIDs.put(player, taskID);
             }
-            
-            player.sendMessage(color+"Right-click to write on paper #"+id);
-
-
-            // Save off old item in hand to restore, and ink color to use
-            savedItemStack.put(player, item);
-            savedItemSlot.put(player, player.getInventory().getHeldItemSlot());
-            currentColor.put(player, color); 
-
-            // Quickly change to sign, so double right-click paper = place sign to write on
-            player.setItemInHand(new ItemStack(Material.SIGN, 1));
-            // TODO: if have >1, save off old paper?
-
-            Writable.setWritingState(player, WritingState.CLICKED_PAPER);
-            
-            // Timeout to NOT_WRITING if our sign isn't used in a sufficient time
-            WritableSignPlaceTimeoutTask task = new WritableSignPlaceTimeoutTask(player);
-            int taskID = Bukkit.getScheduler().scheduleAsyncDelayedTask(plugin, task, plugin.getConfig().getLong("signTimeout", 2*20));
-
-            // Save task to cancel if did in fact make it to PLACED_SIGN in time
-            WritableSignPlaceTimeoutTask.taskIDs.put(player, taskID);
         }
     }
 
@@ -201,6 +210,10 @@ class WritablePlayerListener implements Listener {
     // When change to in inventory slot, read back
     @EventHandler(priority = EventPriority.NORMAL)
     public void onItemHeldChange(PlayerItemHeldEvent event) {
+        if (!plugin.getConfig().getBoolean("autoRead", true)) {
+            return;
+        }
+
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItem(event.getNewSlot());
 
