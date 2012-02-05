@@ -1,3 +1,29 @@
+/*
+Copyright (c) 2012, Mushroom Hostage
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name of the <organization> nor the
+      names of its contributors may be used to endorse or promote products
+      derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package me.exphc.Writable;
 
@@ -11,6 +37,7 @@ import java.util.Iterator;
 import java.util.logging.Logger;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Formatter;
+import java.util.Random;
 import java.lang.Byte;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -70,8 +97,12 @@ class WritablePlayerListener implements Listener {
     static public ConcurrentHashMap<Player, Integer> savedInkSlot = new ConcurrentHashMap<Player, Integer>();
     static public ConcurrentHashMap<Player, ChatColor> currentColor = new ConcurrentHashMap<Player, ChatColor>();   // used in onSignChange
 
+    static private Random random;
+
     public WritablePlayerListener(Writable pl) {
         plugin = pl;
+
+        random = new Random();
 
         Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
     }
@@ -194,7 +225,7 @@ class WritablePlayerListener implements Listener {
 
         player.sendMessage("Reading paper #"+id+":");
         for (String line: lines) {
-            player.sendMessage(" "+line);
+            player.sendMessage(formatReadingLine(player, line));
         }
 
         // Chat shows 10 recent lines normally
@@ -204,6 +235,44 @@ class WritablePlayerListener implements Listener {
         }
 
         // Text on paper is meant to only fit in one chat screen, so no pagination needed
+    }
+
+    // Format a line on paper for reading to the user via chat
+    static private String formatReadingLine(Player player, String line) {
+        String ret;
+        if (line.startsWith(ChatColor.MAGIC.toString()) && player.getInventory().contains(Writable.magicInkDecoder)) {
+            // Remove magic 'color' meaning scrambled text
+            line = line.replace(ChatColor.MAGIC.toString(), "");
+
+            StringBuffer buffer = new StringBuffer();
+            
+            // Replace with random colors
+            for (int i = 0; i < line.length(); i += 1) {
+                char c = line.charAt(i);
+
+                ChatColor color;
+                switch (random.nextInt(8)) {
+                case 0: color = ChatColor.AQUA; break;
+                case 1: color = ChatColor.BLACK; break; // bad luck
+                case 2: color = ChatColor.GOLD; break;
+                case 3: color = ChatColor.GRAY; break;
+                case 4: color = ChatColor.LIGHT_PURPLE; break;
+                case 5: color = ChatColor.WHITE; break;
+                case 6: color = ChatColor.WHITE; break;
+                default:
+                case 7: color = ChatColor.YELLOW; break;
+                }
+
+                buffer.append(color.toString());
+                buffer.append(String.valueOf(c));
+            }
+            
+            ret = buffer.toString();
+        } else {
+            ret = line;
+        }
+
+        return  " " + ret;
     }
 
 
@@ -387,6 +456,8 @@ public class Writable extends JavaPlugin {
     static private int paperLengthLineCap;
     static private boolean consumeInk;
 
+    static public Material magicInkDecoder;
+
 
     public void onEnable() {
         writingState = new ConcurrentHashMap<Player, WritingState>();
@@ -480,6 +551,13 @@ public class Writable extends JavaPlugin {
 
         paperLengthLineCap = getConfig().getInt("paperLengthLineCap", 7);
         consumeInk = getConfig().getBoolean("consumeInk", false);
+
+        String magicInkDecoderString = getConfig().getString("magicInkDecoder");
+        if (magicInkDecoderString != null && !magicInkDecoderString.equals("")) {
+            magicInkDecoder = Material.matchMaterial(magicInkDecoderString);
+        } else {
+            magicInkDecoder = null;
+        }
 
         loadPapers();
     }

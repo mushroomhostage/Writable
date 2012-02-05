@@ -1,6 +1,8 @@
 X 0.3
-    * Add left-click to read
+    * Add magic ink decoder
+    * Add left-click paper to read
     * Add autoRead option (default true) to control reading when item is selected in player's inventory slot
+    * New license (BSD)
 
 2012-01-26  0.2
     * Update for CraftBukkit 1.1-R1

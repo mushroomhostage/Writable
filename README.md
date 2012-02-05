@@ -19,8 +19,9 @@ somewhere in the environment.
 
 A text entry dialog will appear, and you can type your story. 
 
-To read a piece of paper, simply hold it in your hand and the text
-will be displayed in the chat. 
+To read a piece of paper, either left-click while holding the paper,
+or simply hold it in your hand and the text will be displayed in the chat
+(autoRead configuration option).
 
 ## Support
 
@@ -64,6 +65,10 @@ for example, will invoke the crafting grid instead.
 * Redstone Dust (magic)
 
 Inks are optionally consumed when used (consumeInk configuration option).
+
+Magic ink displays randomly alternating characters (same as used in The End credits).
+It can be decoded to randomly colored text by reading the paper while a dragon egg is in your inventory
+(configurable to any material; see the magicInkDecoder option).
 
 ## Technical Details
 
