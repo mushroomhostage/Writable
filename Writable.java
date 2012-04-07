@@ -367,8 +367,7 @@ class WritableBlockListener implements Listener {
                 player.getInventory().clear(inkSlot);
             }
             // Docs say deprecated and should not be relied on, but, client won't update without it
-            // TODO: fix non-deprecated method
-            player.updateInventory();
+            updateInventory(player);
         }
         WritablePlayerListener.savedInkSlot.remove(player);
 
@@ -391,6 +390,12 @@ class WritableBlockListener implements Listener {
             }
         }
         return true;
+    }
+
+    @SuppressWarnings("deprecation")
+    private void updateInventory(Player player) {
+        // TODO: fix non-deprecated method
+        player.updateInventory();
     }
 }
 
