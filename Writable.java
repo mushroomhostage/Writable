@@ -397,6 +397,18 @@ class WritableBlockListener implements Listener {
         // TODO: fix non-deprecated method
         player.updateInventory();
     }
+
+    // TODO: book binding feature? craft 3 paper = book, compatible with BookWorm!
+    /** not available in 1.2.5-R1.0 :(
+    @EventHandler(priority=EventPriority.NORMAL, ignoreCancelled=true)
+    public void onCraftItem(CraftItemEvent event) {
+        CraftingInventory inventory = event.getInventory();
+
+        plugin.log.info("result="+inventory.getResult());
+
+        inventory.setResult(new ItemStack(Material.DIRT, 1));
+    }
+    */
 }
 
 // Like Material, but also has MaterialData
