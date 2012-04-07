@@ -1,4 +1,9 @@
-X 0.3
+X   1.0
+    * Ignore cancelled events
+    * Test on CraftBukkit 1.2.5-R1.0
+
+
+2012-01-05  0.3
     * Add magic ink decoder
     * Add left-click paper to read
     * Add autoRead option (default true) to control reading when item is selected in player's inventory slot

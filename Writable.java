@@ -107,7 +107,7 @@ class WritablePlayerListener implements Listener {
         Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Block block = event.getClickedBlock();
         ItemStack item = event.getItem();
@@ -277,7 +277,7 @@ class WritablePlayerListener implements Listener {
 
 
     // When change to in inventory slot, read back
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
     public void onItemHeldChange(PlayerItemHeldEvent event) {
         if (!plugin.getConfig().getBoolean("autoRead", true)) {
             return;
@@ -294,7 +294,7 @@ class WritablePlayerListener implements Listener {
     }
 
     // If pickup a paper with writing on it, let know
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
     public void onPlayerPickupItem(PlayerPickupItemEvent event) {
         ItemStack item = event.getItem().getItemStack();
 
