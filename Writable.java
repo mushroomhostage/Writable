@@ -686,14 +686,14 @@ public class Writable extends JavaPlugin {
         inkSlot = implementSlot - 1;
         if (inkSlot > 0) {
             inkItem = inventory.getItem(inkSlot);
-            if (getChatColor(inkItem) != null) {
+            if (inkItem != null && getChatColor(inkItem) != null) {
                 return inkSlot;
             }
         }
 
         inkSlot = implementSlot + 1;
         inkItem = inventory.getItem(inkSlot);
-        if (getChatColor(inkItem) != null) {
+        if (inkItem != null && getChatColor(inkItem) != null) {
             return inkSlot;
         }
 
@@ -701,11 +701,11 @@ public class Writable extends JavaPlugin {
     }
 
     private static boolean isWritingImplement(ItemStack item) {
-        return writingImplementMaterials.contains(item.getType());
+        return item != null && writingImplementMaterials.contains(item.getType());
     }
 
     public static boolean isWritingSurface(Block block) {
-        return writingSurfaceMaterials.contains(block.getType());
+        return block != null && writingSurfaceMaterials.contains(block.getType());
     }
 
     // Get chat color used for given writing ink
