@@ -61,6 +61,7 @@ for example, will invoke the crafting grid instead.
 * Magenta Dye (dark purple)
 * Light Gray Dye (gray)
 * Coal (dark gray)
+* Charcoal (dark gray)
 * Glowstone Dust (gold)
 * Redstone Dust (magic)
 
