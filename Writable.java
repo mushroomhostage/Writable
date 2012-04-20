@@ -413,18 +413,13 @@ class WritableBlockListener implements Listener {
 
 // Like Material, but also has MaterialData
 // Like ItemStack, but different data is different!
-// TODO: is this really needed given MaterialData?
 class MaterialWithData implements Comparable {
     int material;
     byte data;
     
     public MaterialWithData(Material m, MaterialData d) {
         material = m.getId();
-        if (d == null) {
-            data = -1;
-        } else {
-            data = d.getData();
-        }
+        data = d.getData();
     }
 
     public MaterialWithData(Material m) {
@@ -448,18 +443,11 @@ class MaterialWithData implements Comparable {
         }
         MaterialWithData rhs = (MaterialWithData)obj;
 
-        // Compare type id
         ret = material - rhs.material;
         if (ret != 0) {
             return ret;
         }
 
-        if (data == -1 || rhs.data == -1) {
-            // special case: no metadata matches all metadata
-            return 0;
-        }
-
-        // Compare metadata
         return data - rhs.data;
     }
 
@@ -548,7 +536,6 @@ public class Writable extends JavaPlugin {
             String colorString = (String)pair.getValue();
 
             MaterialWithData ink = lookupInk(inkString);
-            log.info("INK="+ink);
             if (ink == null) { 
                 log.info("Invalid ink item: " + inkString);
                 // TODO: error
@@ -616,8 +603,7 @@ public class Writable extends JavaPlugin {
     private MaterialWithData lookupInk(String s) {
         Material material = Material.matchMaterial(s);
         if (material != null) {
-            // match any metadata with this material
-            return new MaterialWithData(material, null);
+            return new MaterialWithData(material);
         }
         DyeColor dyeColor = getDyeColor(s);
         if (dyeColor == null) {
