@@ -4,6 +4,8 @@ A new plugin for writing and reading text on paper, with a twist of realism.
 
 Designed to not require any chat commands or client modifications.
 
+**[Download Writable 1.1](http://dev.bukkit.org/server-mods/writable/files/6-writable-1-1/)** - released on 2012/04/19 for 1.2.5
+
 ## Usage
 
 To write, you will need paper and:
