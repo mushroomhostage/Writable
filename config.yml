@@ -82,6 +82,7 @@ inks:
     magenta_dye: dark_purple
     light_gray_dye: gray
     coal: dark_gray
+    'coal;1': dark_gray       # charcoal
     glowstone_dust: gold
     redstone: magic
     #cocoa_beans: # no brown

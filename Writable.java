@@ -413,6 +413,7 @@ class WritableBlockListener implements Listener {
 
 // Like Material, but also has MaterialData
 // Like ItemStack, but different data is different!
+// TODO: is this really necessary?
 class MaterialWithData implements Comparable {
     int material;
     byte data;
@@ -600,6 +601,7 @@ public class Writable extends JavaPlugin {
         return id;
     }
 
+    // TODO: switch to serialized ItemStack?
     private MaterialWithData lookupInk(String s) {
         Material material = Material.matchMaterial(s);
         if (material != null) {
@@ -616,6 +618,16 @@ public class Writable extends JavaPlugin {
 
             return new MaterialWithData(item.getType(), item.getData());
         }
+
+        if (s.contains(";")) {
+            String[] parts = s.split(";");
+            log.info("parts:"+parts);
+            material = Material.matchMaterial(parts[0]);
+            int data = Integer.parseInt(parts[1]);
+
+            return new MaterialWithData(material, new MaterialData(material, (byte)data));
+        }
+
         return null;
     }
 
