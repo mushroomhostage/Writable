@@ -107,7 +107,7 @@ class WritablePlayerListener implements Listener {
         Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled=true)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Block block = event.getClickedBlock();
         ItemStack item = event.getItem();
@@ -277,7 +277,7 @@ class WritablePlayerListener implements Listener {
 
 
     // When change to in inventory slot, read back
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled=true)
     public void onItemHeldChange(PlayerItemHeldEvent event) {
         if (!plugin.getConfig().getBoolean("autoRead", true)) {
             return;
@@ -294,7 +294,7 @@ class WritablePlayerListener implements Listener {
     }
 
     // If pickup a paper with writing on it, let know
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled=true)
     public void onPlayerPickupItem(PlayerPickupItemEvent event) {
         ItemStack item = event.getItem().getItemStack();
 
@@ -317,7 +317,7 @@ class WritableBlockListener implements Listener {
         Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled=true)
     public void onBlockPlace(BlockPlaceEvent event) {
         Block block = event.getBlock();
         Player player = event.getPlayer();
@@ -337,7 +337,7 @@ class WritableBlockListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled=true)
     public void onSignChange(SignChangeEvent event) {
         Block block = event.getBlock();
         Player player = event.getPlayer();
@@ -400,7 +400,7 @@ class WritableBlockListener implements Listener {
 
     // TODO: book binding feature? craft 3 paper = book, compatible with BookWorm!
     /** not available in 1.2.5-R1.0 :(
-    @EventHandler(priority=EventPriority.NORMAL, ignoreCancelled=true)
+    @EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
     public void onCraftItem(CraftItemEvent event) {
         CraftingInventory inventory = event.getInventory();
 

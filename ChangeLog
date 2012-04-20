@@ -1,6 +1,7 @@
 2012-04-19  1.1
     * Add charcoal as a writing ink by default (same color as coal)
     * Add support for ink items with metadata
+    * Change event priorities to monitor
     * Fix NPE when writing with partially empty hotbar
 
 2012-03-07  1.0
