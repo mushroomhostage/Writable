@@ -1,3 +1,6 @@
+X   X
+    * Use HashMap of UUID instead of Player to fix potential memory leak / incompatibility
+
 2012-04-19  1.1
     * Add charcoal as a writing ink by default (same color as coal)
     * Add support for ink items with metadata

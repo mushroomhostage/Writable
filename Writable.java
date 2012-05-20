@@ -67,7 +67,7 @@ enum WritingState {
 }
 
 class WritableSignPlaceTimeoutTask implements Runnable {
-    static public ConcurrentHashMap<Player, Integer> taskIDs = new ConcurrentHashMap<Player, Integer>();
+    static public ConcurrentHashMap<UUID, Integer> taskIDs = new ConcurrentHashMap<UUID, Integer>();
 
     static Logger log = Logger.getLogger("Minecraft");
     Player player;
@@ -84,7 +84,7 @@ class WritableSignPlaceTimeoutTask implements Runnable {
             Writable.setWritingState(player, WritingState.NOT_WRITING);
         }
 
-        WritableSignPlaceTimeoutTask.taskIDs.remove(player);
+        WritableSignPlaceTimeoutTask.taskIDs.remove(player.getUniqueId());
     }
 }
 
@@ -92,10 +92,10 @@ class WritablePlayerListener implements Listener {
     Logger log = Logger.getLogger("Minecraft");
     Writable plugin;
 
-    static private ConcurrentHashMap<Player, ItemStack> savedItemStack = new ConcurrentHashMap<Player, ItemStack>();
-    static private ConcurrentHashMap<Player, Integer> savedItemSlot = new ConcurrentHashMap<Player, Integer>();
-    static public ConcurrentHashMap<Player, Integer> savedInkSlot = new ConcurrentHashMap<Player, Integer>();
-    static public ConcurrentHashMap<Player, ChatColor> currentColor = new ConcurrentHashMap<Player, ChatColor>();   // used in onSignChange
+    static private ConcurrentHashMap<UUID, ItemStack> savedItemStack = new ConcurrentHashMap<UUID, ItemStack>();
+    static private ConcurrentHashMap<UUID, Integer> savedItemSlot = new ConcurrentHashMap<UUID, Integer>();
+    static public ConcurrentHashMap<UUID, Integer> savedInkSlot = new ConcurrentHashMap<UUID, Integer>();
+    static public ConcurrentHashMap<UUID, ChatColor> currentColor = new ConcurrentHashMap<UUID, ChatColor>();   // used in onSignChange
 
     static private Random random;
 
@@ -152,7 +152,7 @@ class WritablePlayerListener implements Listener {
                     return;
                 }
 
-                savedInkSlot.put(player, inkSlot);  // for consuming ink
+                savedInkSlot.put(player.getUniqueId(), inkSlot);  // for consuming ink
 
                 ItemStack inkItem = player.getInventory().getItem(inkSlot);
                 ChatColor color = Writable.getChatColor(inkItem);
@@ -174,9 +174,9 @@ class WritablePlayerListener implements Listener {
 
 
                 // Save off old item in hand to restore, and ink color to use
-                savedItemStack.put(player, item);
-                savedItemSlot.put(player, player.getInventory().getHeldItemSlot());
-                currentColor.put(player, color); 
+                savedItemStack.put(player.getUniqueId(), item);
+                savedItemSlot.put(player.getUniqueId(), player.getInventory().getHeldItemSlot());
+                currentColor.put(player.getUniqueId(), color); 
 
                 // Quickly change to sign, so double right-click paper = place sign to write on
                 player.setItemInHand(new ItemStack(Material.SIGN, 1));
@@ -189,7 +189,7 @@ class WritablePlayerListener implements Listener {
                 int taskID = Bukkit.getScheduler().scheduleAsyncDelayedTask(plugin, task, plugin.getConfig().getLong("signTimeout", 2*20));
 
                 // Save task to cancel if did in fact make it to PLACED_SIGN in time
-                WritableSignPlaceTimeoutTask.taskIDs.put(player, taskID);
+                WritableSignPlaceTimeoutTask.taskIDs.put(player.getUniqueId(), taskID);
             }
         }
     }
@@ -197,15 +197,15 @@ class WritablePlayerListener implements Listener {
     // Restore previous item held by player, before started writing (do not use setItemInHand())
     // Returns items restored
     static public ItemStack restoreSavedItem(Player player) {
-        ItemStack items = savedItemStack.get(player);
-        int slot = savedItemSlot.get(player);
+        ItemStack items = savedItemStack.get(player.getUniqueId());
+        int slot = savedItemSlot.get(player.getUniqueId());
 
         player.getInventory().setItem(slot, items);
 
-        savedItemStack.remove(player);
-        savedItemSlot.remove(player);
-        currentColor.remove(player);
-        savedInkSlot.remove(player);
+        savedItemStack.remove(player.getUniqueId());
+        savedItemSlot.remove(player.getUniqueId());
+        currentColor.remove(player.getUniqueId());
+        savedInkSlot.remove(player.getUniqueId());
 
         return items;
     }
@@ -328,8 +328,8 @@ class WritableBlockListener implements Listener {
             // Did they get this sign from right-clicking paper?
             if (state == WritingState.CLICKED_PAPER) {
                 // We made it, stop timeout task (so won't revert to NOT_WRITING and take back sign)
-                int taskID = WritableSignPlaceTimeoutTask.taskIDs.get(player);
-                WritableSignPlaceTimeoutTask.taskIDs.remove(player);
+                int taskID = WritableSignPlaceTimeoutTask.taskIDs.get(player.getUniqueId());
+                WritableSignPlaceTimeoutTask.taskIDs.remove(player.getUniqueId());
                 Bukkit.getScheduler().cancelTask(taskID);
 
                 Writable.setWritingState(player, WritingState.PLACED_SIGN);
@@ -353,11 +353,11 @@ class WritableBlockListener implements Listener {
         // Destroy sign
         block.setType(Material.AIR);
 
-        ChatColor color = WritablePlayerListener.currentColor.get(player);
+        ChatColor color = WritablePlayerListener.currentColor.get(player.getUniqueId());
 
         // Optionally use up ink
         if (Writable.isInkConsumable() && !isSignWritingBlank(lines)) {
-            int inkSlot = WritablePlayerListener.savedInkSlot.get(player);
+            int inkSlot = WritablePlayerListener.savedInkSlot.get(player.getUniqueId());
             ItemStack inkItem = player.getInventory().getItem(inkSlot);
             int amount = inkItem.getAmount();
 
@@ -369,7 +369,7 @@ class WritableBlockListener implements Listener {
             // Docs say deprecated and should not be relied on, but, client won't update without it
             updateInventory(player);
         }
-        WritablePlayerListener.savedInkSlot.remove(player);
+        WritablePlayerListener.savedInkSlot.remove(player.getUniqueId());
 
         // Restore previous item (paper), replacing sign, and so we can write on it
         ItemStack paperItem = WritablePlayerListener.restoreSavedItem(player);
@@ -463,7 +463,7 @@ public class Writable extends JavaPlugin {
     WritablePlayerListener playerListener;
     WritableBlockListener blockListener;
 
-    static private ConcurrentHashMap<Player, WritingState> writingState;
+    static private ConcurrentHashMap<UUID, WritingState> writingState;
     static private ConcurrentHashMap<Integer, ArrayList<String>> paperTexts;    // TODO: paper class?
 
     static private List<Material> writingImplementMaterials;
@@ -478,7 +478,7 @@ public class Writable extends JavaPlugin {
 
 
     public void onEnable() {
-        writingState = new ConcurrentHashMap<Player, WritingState>();
+        writingState = new ConcurrentHashMap<UUID, WritingState>();
 
         loadConfig();
 
@@ -769,14 +769,14 @@ public class Writable extends JavaPlugin {
         //log.info("State change "+player.getName()+": "+oldState+" -> "+newState);
 
         if (newState == WritingState.NOT_WRITING) {
-            writingState.remove(player);
+            writingState.remove(player.getUniqueId());
         } else {
-            writingState.put(player, newState);
+            writingState.put(player.getUniqueId(), newState);
         }
     }
 
     static public WritingState getWritingState(Player player) {
-        WritingState state = writingState.get(player);
+        WritingState state = writingState.get(player.getUniqueId());
 
         return state == null ? WritingState.NOT_WRITING : state;
     }
