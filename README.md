@@ -16,6 +16,8 @@ Features:
 
 **[Download Writable 1.2](http://dev.bukkit.org/server-mods/writable/files/7-writable-1-2/)** - released on 2012/05/20 for 1.2.5-R2.0
 
+[Forum thread](http://forums.bukkit.org/threads/mech-rpg-writable-v1-2-write-on-paper-no-chat-commands-required-1-2-5-r2-0.76653/)
+
 ## Usage
 
 To write, you will need paper and:
